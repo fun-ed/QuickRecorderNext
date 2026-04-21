@@ -42,6 +42,8 @@
 	</array>
 	<key>NSAppleScriptEnabled</key>
 	<true/>
+	<key>NSCameraUseContinuityCameraDeviceType</key>
+	<true/>
 	<key>OSAScriptingDefinition</key>
 	<string>Scriptable</string>
 	<key>SUFeedURL</key>

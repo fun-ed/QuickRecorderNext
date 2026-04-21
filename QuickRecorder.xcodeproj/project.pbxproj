@@ -582,7 +582,7 @@
 			repositoryURL = "https://github.com/sparkle-project/Sparkle";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 2.6.0;
+				minimumVersion = 2.9.1;
 			};
 		};
 		184506CC2C69213400AFDA45 /* XCRemoteSwiftPackageReference "MatrixColorSelector" */ = {
@@ -606,7 +606,7 @@
 			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 2.2.4;
+				minimumVersion = 2.4.0;
 			};
 		};
 		18F40B472BFB988A00F0AC70 /* XCRemoteSwiftPackageReference "SwiftLAME" */ = {

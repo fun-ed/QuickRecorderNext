@@ -567,7 +567,14 @@ class SCContext {
     }
     
     static func getCameras() -> [AVCaptureDevice] {
-        let discoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .externalUnknown], mediaType: .video, position: .unspecified)
+        var deviceTypes: [AVCaptureDevice.DeviceType] = [.builtInWideAngleCamera]
+        if #available(macOS 14.0, *) {
+            deviceTypes.append(.external)
+            deviceTypes.append(.continuityCamera)
+        } else {
+            deviceTypes.append(.externalUnknown)
+        }
+        let discoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: deviceTypes, mediaType: .video, position: .unspecified)
         return discoverySession.devices
     }
     
@@ -582,7 +589,13 @@ class SCContext {
     }
     
     static func getiDevice() -> [AVCaptureDevice] {
-        let discoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: [.externalUnknown], mediaType: .muxed, position: .unspecified)
+        var deviceTypes: [AVCaptureDevice.DeviceType] = []
+        if #available(macOS 14.0, *) {
+            deviceTypes.append(.external)
+        } else {
+            deviceTypes.append(.externalUnknown)
+        }
+        let discoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: deviceTypes, mediaType: .muxed, position: .unspecified)
         return discoverySession.devices
     }
     
