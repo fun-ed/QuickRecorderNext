@@ -1,5 +1,23 @@
 # 更新日誌
 
+## [1.7.1] - 2026-04-21
+
+### 安全性修復 🚨
+
+- **Sparkle 升級至 2.9.1**：修補 [CVE-2025-0509](https://github.com/advisories/GHSA-wc9m-r3v6-9p5h)（Signing Checks Bypass，CVSS 7.4）
+  - 攻擊者可在舊版 Sparkle 中以未授權 payload 取代簽名更新檔
+  - 影響版本：Sparkle ≤ 2.6.3
+
+### 依賴更新
+
+- KeyboardShortcuts: 2.2.4 → 2.4.0
+
+### 修復
+
+- 修復 macOS 14+ 對 `AVCaptureDeviceTypeExternal` 的 Continuity Camera deprecation warning
+  - `Info.plist` 加入 `NSCameraUseContinuityCameraDeviceType`
+  - `SCContext.getCameras()` / `getiDevice()` 在 macOS 14+ 改用 `.external` + `.continuityCamera`
+
 ## [未發布] - 2024-12-23
 
 ### 新增功能
