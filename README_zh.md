@@ -46,6 +46,23 @@ brew install lihaoyun6/tap/quickrecorder
 **4. 如何排查录制问题?**
 > QuickRecorder 包含 Debug Log 功能用于故障排查。前往 **Help > View Debug Log** 查看诊断信息。日志文件位于 `/tmp/qr-debug.log`。
 
+**5. 如果录制过程中被强制结束 (Force Quit / Crash) 会怎样?**
+> 从 v1.7.2 起，QuickRecorder 启用 **Fragmented MP4** 写入 — 文件的索引每 1 秒写入一次，不再只在结束时写。即使录制中途 App 被强制结束或崩溃，**最多只损失最后 1 秒**的画面，其余片段仍可正常播放。下次启动 App 时，也会自动扫描保存目录，提示是否有未完成的录影。
+>
+> **注意:** `Record HDR` 开启时，此保护会**自动停用**（HEVC Main10 与 fragmented MP4 不相容，会触发编码器错误）。录制 HDR 内容时若中断，文件仍可能无法播放。
+
+**6. 推荐设定（降低损坏风险）:**
+> | 设定 | 推荐值 | 原因 |
+> |------|--------|------|
+> | Encoder | **H.264** | GOP 较短，中断后容易恢复 |
+> | Format | **MP4** | Fragmented MP4 在此容器最稳定 |
+> | Record HDR | **关闭** | 保留 Fragmented MP4 保护 |
+> | Alpha Channel | **关闭** | 避免强制 HEVC + MOV 路径 |
+> | Quality | **High** | 高码率，frame 自含信息多 |
+> | Frame Rate | **60** | 每秒可恢复数据量较多 |
+>
+> 若使用多轨音频模式（`Record Microphone to Main Track` + 系统音 + 麦克风全部开启），按下停止后请**多等 10-15 秒再关闭 App**，让音频混合流程跑完 — 否则可能会留下临时档案 `.mp4.mp4.mp4`。
+
 ## 赞助
 <img src="./img/donate.png" width="352"/>
 

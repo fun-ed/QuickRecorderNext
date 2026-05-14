@@ -45,6 +45,23 @@ brew install lihaoyun6/tap/quickrecorder
 **4. How can I troubleshoot recording issues?**
 > QuickRecorder includes a debug log feature for troubleshooting. Go to **Help > View Debug Log** to view diagnostic information. The log file is located at `/tmp/qr-debug.log`.
 
+**5. What happens if recording is interrupted (force quit / crash)?**
+> Since v1.7.2, QuickRecorder uses **fragmented MP4** writing — the file's metadata index is written every 1 second instead of only at the end. So if the app is force-quit or crashes during recording, **you lose at most the last 1 second** of footage and the rest remains playable. On next launch, QuickRecorder will also notify you of any interrupted recordings detected in your save folder.
+>
+> **Note:** This protection is automatically **disabled** when `Record HDR` is on (HEVC Main10 + fragmented MP4 triggers an encoder error). If you record HDR content, abrupt termination may still corrupt the file.
+
+**6. Recommended settings to minimize corruption risk:**
+> | Setting | Recommended | Why |
+> |---------|-------------|-----|
+> | Encoder | **H.264** | Short GOP — recovers more cleanly after interruption |
+> | Format | **MP4** | Fragmented MP4 most stable in this container |
+> | Record HDR | **Off** | Keeps fragmented MP4 protection active |
+> | Alpha Channel | **Off** | Avoids forced HEVC + MOV path |
+> | Quality | **High** | Higher bitrate = more self-contained frames |
+> | Frame Rate | **60** | More data per second to recover |
+>
+> If you use the multi-track audio mode (`Record Microphone to Main Track` + system audio + mic all on), **wait 10–15 seconds after pressing stop** before quitting the app, so the audio mixing process can finish — otherwise a temporary `.mp4.mp4.mp4` file may remain on disk.
+
 ## Donate
 <img src="./img/donate.png" width="350"/>
 
