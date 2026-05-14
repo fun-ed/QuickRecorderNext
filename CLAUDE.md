@@ -179,3 +179,48 @@ Permission checks are in `SCContext.swift`:
 - H.264 hardware encoder has resolution limitations (prompts to switch to H.265 if unsupported)
 - macOS 12 doesn't support: system audio capture (`recordWinSound`), preview window
 - Some features (presenter overlay, HDR) require newer macOS versions
+
+## Recording File Integrity (since v1.7.2)
+
+### Fragmented MP4 Protection
+
+`RecordEngine.swift` enables `movieFragmentInterval = 1.0s` on the main `AVAssetWriter`
+**except when `recordHDR == true`**. With fragmented MP4 active, the moov atom is written
+every second instead of only at `finishWriting()` time — so if the app is force-killed
+or crashes, the file remains playable (losing at most the last 1 second).
+
+**Why HDR is skipped**: HEVC Main10 (used for HDR) triggers `VTVideoEncoderMalfunctionErr (-16341)`
+when combined with fragmented MP4. This regression was introduced in commit `a6c645e`
+and re-fixed conditionally in v1.7.2.
+
+When changing video encoding paths, **do not** unconditionally disable `movieFragmentInterval` again.
+If a new codec/mode breaks with it, add it to the skip condition rather than removing the flag entirely.
+
+### Orphan Recording Cleanup
+
+`QuickRecorderApp.swift::cleanupOrphanRecordings()` runs on `applicationDidFinishLaunching`.
+It scans `saveDirectory` for `.mp4.mp4.mp4` / `.mov.mov.mov` / `.mp4.mp4` / `.mov.mov` files
+(the temp markers used by the multi-track audio mixing flow when `recordMic + recordWinSound +
+remuxAudio` are all on) and notifies the user via macOS notification — does **not** auto-delete.
+
+### `.mp4.mp4.mp4` Triple Extension (Intentional, see `BUG_REPORT_TRIPLE_EXTENSION.md`)
+
+When `remuxAudio + recordMic + recordWinSound` are all enabled, `RecordEngine.swift:381` writes
+to `<basename>.mp4.mp4.mp4` as a temp file. `SCContext.mixAudioTracks()` then strips two
+extensions to produce the final `<basename>.mp4`. If the app dies during `mixAudioTracks()`
+(it's async via `AVAssetExportSession`), the temp file stays on disk.
+
+### Recommended Codec Combo for Recovery-Friendly Recordings
+
+| Setting | Recommended | Reason |
+|---------|-------------|--------|
+| `encoder` | `h264` | Short GOP, fragments recover cleanly |
+| `videoFormat` | `mp4` | Fragmented MP4 most stable in this container |
+| `recordHDR` | `false` | Avoids -16341, keeps fragmented MP4 active |
+| `withAlpha` | `false` | Alpha forces HEVC+MOV, recovery difficult |
+| `videoQuality` | `1.0` (high) | Higher bitrate = more self-contained frames |
+| `frameRate` | `60` | More data per second to recover |
+| `remuxAudio` | `false` (optional) | Avoids `.mp4.mp4.mp4` temp file risk |
+
+These are also the project defaults (see `applicationWillFinishLaunching` in `QuickRecorderApp.swift`)
+except for `remuxAudio` which defaults to `true` on macOS 13+.
