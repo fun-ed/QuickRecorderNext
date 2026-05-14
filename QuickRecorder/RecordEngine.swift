@@ -440,13 +440,22 @@ extension AppDelegate {
             startMicRecording()
         }
 
-        // Re-enabled fragmented MP4 (1.0s interval) to keep file playable after abrupt termination.
-        // Skip HDR mode — HEVC Main10 in HDR triggered VTVideoEncoderMalfunctionErr (-16341).
-        if !recordHDR {
+        // Fragmented MP4 keeps the file playable if recording is interrupted.
+        // Skip conditions (known to break with fragmented mode):
+        //   - HDR: HEVC Main10 triggers VTVideoEncoderMalfunctionErr (-16341)
+        //   - Multi-track audio (mic + system + remuxAudio): only the first 1s fragment
+        //     is written, the rest of the recording is dropped on the floor.
+        //     Triple-input writer + fragment boundary alignment regression — TBD investigation.
+        let multiTrackAudio = ud.bool(forKey: "recordMic")
+                              && ud.bool(forKey: "recordWinSound")
+                              && ud.bool(forKey: "remuxAudio")
+        if !recordHDR && !multiTrackAudio {
             SCContext.vW.movieFragmentInterval = CMTime(seconds: 1, preferredTimescale: 1000)
             debugLog("initVideo: fragmented MP4 enabled (1s interval)")
-        } else {
+        } else if recordHDR {
             debugLog("initVideo: fragmented MP4 skipped (HDR mode)")
+        } else {
+            debugLog("initVideo: fragmented MP4 skipped (multi-track audio mode)")
         }
 
         SCContext.vW.startWriting()
