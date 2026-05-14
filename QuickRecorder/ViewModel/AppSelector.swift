@@ -291,6 +291,7 @@ struct OptionsView: View {
                         }
                         .fixedSize()
                         .toggleStyle(.checkbox)
+                        .help("HDR forces HEVC Main10 encoding. Only enable if you're recording HDR content (e.g. games, Dolby Vision). Disabling HDR also enables fragmented MP4 — keeps the file playable even if recording is interrupted unexpectedly.")
                     }
                     Toggle(isOn: $showMouse) {
                         HStack(spacing: 0){

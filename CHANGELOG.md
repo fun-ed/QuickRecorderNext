@@ -1,5 +1,32 @@
 # 更新日誌
 
+## [1.7.2] - 2026-05-14
+
+### 修復
+
+- **重新啟用 Fragmented MP4 防止錄影中斷檔案損壞**（修復 commit `a6c645e` 之後再次出現的 moov atom 遺失問題）
+  - `RecordEngine.swift`：在非 HDR 模式下啟用 `movieFragmentInterval = 1.0s`
+  - 將 fragment interval 從 0.5s 改為 1.0s 給 encoder 多一點 buffer 時間
+  - 跳過 HDR 模式以避免 VTVideoEncoderMalfunctionErr (-16341)
+  - 異常終止時最多遺失最後 1 秒，其餘檔案仍可正常播放
+
+### 新增
+
+- **啟動時自動偵測未完成錄影**
+  - `QuickRecorderApp.swift::cleanupOrphanRecordings()`：在 `applicationDidFinishLaunching` 掃描 saveDirectory
+  - 偵測 `.mp4.mp4.mp4` / `.mov.mov.mov` / `.mp4.mp4` / `.mov.mov` 等中斷殘留檔
+  - 透過通知告知使用者，方便手動恢復
+
+### 建議設定（避免損壞 + 易於修復）
+
+| 設定 | 推薦值 | 原因 |
+|------|--------|------|
+| encoder | H.264 | 短 GOP，中斷後容易救回 |
+| videoFormat | mp4 | Fragmented MP4 最穩 |
+| recordHDR | false | 避免 -16341 encoder error |
+| videoQuality | 1.0 (high) | 高 bitrate，frame 自含資訊多 |
+| frameRate | 60 | 細節多，可救資料量大 |
+
 ## [1.7.1] - 2026-04-21
 
 ### 安全性修復 🚨

@@ -369,10 +369,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         closeAllWindow()
         if showOnDock { _ = applicationShouldHandleReopen(NSApp, hasVisibleWindows: true) }
+        cleanupOrphanRecordings()
         tips("Would you like to use H.265 format for better video quality and smaller file size?",
              id: "qr.switch-to-h265.note", buttonTitle: "Use H.265", switchButton: true) {
             ud.setValue(Encoder.h265.rawValue, forKey: "encoder")
         }
+    }
+
+    func cleanupOrphanRecordings() {
+        let saveDir = ud.string(forKey: "saveDirectory") ?? (NSSearchPathForDirectoriesInDomains(.desktopDirectory, .userDomainMask, true) as [String]).first ?? ""
+        guard !saveDir.isEmpty, let contents = try? fd.contentsOfDirectory(atPath: saveDir) else { return }
+        let orphanSuffixes = [".mp4.mp4.mp4", ".mov.mov.mov", ".mp4.mp4", ".mov.mov"]
+        let orphans = contents.filter { name in orphanSuffixes.contains { name.hasSuffix($0) } }
+        guard !orphans.isEmpty else { return }
+        print("[orphan-cleanup] Found \(orphans.count) interrupted recording(s):")
+        for name in orphans { print("  - \(name)") }
+        SCContext.showNotification(
+            title: "Interrupted Recordings Found".local,
+            body: String(format: "%d incomplete recording(s) detected in your save folder. Open the folder to recover them.".local, orphans.count),
+            id: "quickrecorder.orphan.\(UUID().uuidString)"
+        )
     }
     
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

@@ -440,9 +440,14 @@ extension AppDelegate {
             startMicRecording()
         }
 
-        // DISABLED: movieFragmentInterval was causing encoder failures (-16341)
-        // TODO: Investigate fragmented MP4 compatibility with video encoder
-        // SCContext.vW.movieFragmentInterval = CMTime(seconds: 0.5, preferredTimescale: 1000)
+        // Re-enabled fragmented MP4 (1.0s interval) to keep file playable after abrupt termination.
+        // Skip HDR mode — HEVC Main10 in HDR triggered VTVideoEncoderMalfunctionErr (-16341).
+        if !recordHDR {
+            SCContext.vW.movieFragmentInterval = CMTime(seconds: 1, preferredTimescale: 1000)
+            debugLog("initVideo: fragmented MP4 enabled (1s interval)")
+        } else {
+            debugLog("initVideo: fragmented MP4 skipped (HDR mode)")
+        }
 
         SCContext.vW.startWriting()
         debugLog("initVideo: vW.startWriting() - filePath: \(SCContext.filePath ?? "nil")")

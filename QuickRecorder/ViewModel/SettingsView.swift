@@ -190,7 +190,7 @@ struct OutputView: View {
                 }
                 SDivider()
                 if #available(macOS 13, *) {
-                    SToggle("Record Microphone to Main Track", isOn: $remuxAudio)
+                    SToggle("Record Microphone to Main Track", isOn: $remuxAudio, tips: "Merges microphone into the main audio track using a temporary `.mp4.mp4.mp4` file. If recording is interrupted, that temp file may remain on disk. Turn OFF to keep mic and system audio as separate tracks (more reliable, can mix in your editor).")
                     SDivider()
                 }
                 SToggle("Enable Acoustic Echo Cancellation", isOn: $enableAEC)
@@ -210,11 +210,11 @@ struct OutputView: View {
                 }.disabled(withAlpha)
                 SDivider()
                 SPicker("Encoder", selection: $encoder) {
-                    Text("H.264").tag(Encoder.h264)
+                    Text("H.264 (Recommended)").tag(Encoder.h264)
                     Text("H.265").tag(Encoder.h265)
                 }.disabled(withAlpha)
                 SDivider()
-                SToggle("Recording with Alpha Channel", isOn: $withAlpha)
+                SToggle("Recording with Alpha Channel", isOn: $withAlpha, tips: "Alpha Channel forces HEVC + MOV. Most users don't need it (only for transparent overlays in editing software). Keep it off — saves CPU and makes files easier to recover if recording is interrupted.")
             }
             SGroupBox(label: "Save") {
                 SItem(label: "Output Folder") {
