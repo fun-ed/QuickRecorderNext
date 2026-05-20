@@ -441,21 +441,24 @@ extension AppDelegate {
         }
 
         // Fragmented MP4 keeps the file playable if recording is interrupted.
-        // Skip conditions (known to break with fragmented mode):
+        // Skip whenever the writer has non-video inputs: AVAssetWriter's fragment-boundary
+        // synchronization requires every input to remain ready at each boundary, but SCStream
+        // feeds video/audio sample buffers on independent callbacks at different rates. After
+        // the first ~1s fragment, an audio input's isReadyForMoreMediaData stays false and
+        // subsequent samples are silently dropped (RecordEngine.swift:653 / mic append paths).
+        // Confirmed: ffprobe on three failed v1.7.3 recordings showed identical 47 AAC frames
+        // (=1.0s at 48kHz) regardless of how long the user recorded.
+        // Skip conditions:
         //   - HDR: HEVC Main10 triggers VTVideoEncoderMalfunctionErr (-16341)
-        //   - Multi-track audio (mic + system + remuxAudio): only the first 1s fragment
-        //     is written, the rest of the recording is dropped on the floor.
-        //     Triple-input writer + fragment boundary alignment regression — TBD investigation.
-        let multiTrackAudio = ud.bool(forKey: "recordMic")
-                              && ud.bool(forKey: "recordWinSound")
-                              && ud.bool(forKey: "remuxAudio")
-        if !recordHDR && !multiTrackAudio {
+        //   - Any audio input (mic or system sound): fragment alignment stall
+        let hasAnyAudio = ud.bool(forKey: "recordMic") || ud.bool(forKey: "recordWinSound")
+        if !recordHDR && !hasAnyAudio {
             SCContext.vW.movieFragmentInterval = CMTime(seconds: 1, preferredTimescale: 1000)
-            debugLog("initVideo: fragmented MP4 enabled (1s interval)")
+            debugLog("initVideo: fragmented MP4 enabled (1s interval, screen-only)")
         } else if recordHDR {
             debugLog("initVideo: fragmented MP4 skipped (HDR mode)")
         } else {
-            debugLog("initVideo: fragmented MP4 skipped (multi-track audio mode)")
+            debugLog("initVideo: fragmented MP4 skipped (audio inputs present)")
         }
 
         SCContext.vW.startWriting()

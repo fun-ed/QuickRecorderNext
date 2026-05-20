@@ -180,21 +180,38 @@ Permission checks are in `SCContext.swift`:
 - macOS 12 doesn't support: system audio capture (`recordWinSound`), preview window
 - Some features (presenter overlay, HDR) require newer macOS versions
 
-## Recording File Integrity (since v1.7.2)
+## Recording File Integrity (since v1.7.2, updated v1.7.4)
 
-### Fragmented MP4 Protection
+### Fragmented MP4 Protection (narrow scope after v1.7.4)
 
 `RecordEngine.swift` enables `movieFragmentInterval = 1.0s` on the main `AVAssetWriter`
-**except when `recordHDR == true`**. With fragmented MP4 active, the moov atom is written
-every second instead of only at `finishWriting()` time — so if the app is force-killed
-or crashes, the file remains playable (losing at most the last 1 second).
+**only when neither `recordMic` nor `recordWinSound` is on AND `recordHDR == false`** —
+i.e. screen-only recording with no audio. With fragmented MP4 active in that mode, the
+moov atom is written every second, so if the app is force-killed or crashes, the file
+remains playable (losing at most the last 1 second).
+
+**Why audio inputs are skipped (v1.7.4 root cause finding)**: AVAssetWriter's
+fragmented mode requires every input to remain "ready" at each fragment boundary.
+SCStream feeds video and audio sample buffers on independent callbacks at different
+rates, and `awInput.isReadyForMoreMediaData` permanently returns false after the first
+1s fragment — subsequent audio samples are silently dropped (no log, no error), the
+writer effectively stops accepting any new media. ffprobe on three v1.7.3 failed
+recordings showed identical 47 AAC frames (=1.0s @ 48kHz) regardless of actual
+recording duration — pathognomonic of "first fragment then stall".
 
 **Why HDR is skipped**: HEVC Main10 (used for HDR) triggers `VTVideoEncoderMalfunctionErr (-16341)`
-when combined with fragmented MP4. This regression was introduced in commit `a6c645e`
-and re-fixed conditionally in v1.7.2.
+when combined with fragmented MP4. Introduced in commit `a6c645e`, re-fixed in v1.7.2.
 
-When changing video encoding paths, **do not** unconditionally disable `movieFragmentInterval` again.
-If a new codec/mode breaks with it, add it to the skip condition rather than removing the flag entirely.
+**Iteration history (don't repeat the cycle)**:
+- v1.7.1 (`a6c645e`): disabled `movieFragmentInterval` entirely — lost protection
+- v1.7.2 (`81b8523`): re-enabled, skip only HDR — broke 5-min recordings with audio
+- v1.7.3 (`83c8b64`): skip multi-track audio (mic+sys+remux, 3 inputs) — still broken for 2-input case
+- v1.7.4: skip whenever ANY audio input is present — only verified-working scope
+
+When changing video encoding paths, **do not** unconditionally disable `movieFragmentInterval` again
+unless you've verified the current path was previously protected. If you find a way to keep
+fragments working with audio inputs, that's a feature — open a TODO and write a real verify
+test (record ≥30s in that exact config, ffprobe duration ≥ wall-clock).
 
 ### Orphan Recording Cleanup
 

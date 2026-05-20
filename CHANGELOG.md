@@ -1,5 +1,28 @@
 # 更新日誌
 
+## [1.7.4] - 2026-05-20
+
+### 緊急修復 🚨
+
+- **錄影只有 1-2 秒的 regression（涵蓋 v1.7.3 未修復的場景）**
+  - v1.7.3 只在「mic + 系統音 + remux 三軌」模式停用 fragmented MP4，但實測**任何含 audio input 的錄影**都會觸發相同 bug：AVAssetWriter 在第一個 1s fragment 後 `awInput.isReadyForMoreMediaData` 永久回傳 false，後續 audio sample 被靜默丟棄。
+  - **症狀**：3 個獨立失敗檔的 ffprobe 顯示完全相同的 47 AAC frames（=1.0s @ 48kHz），與實際錄影長度（5 分鐘）完全脫鉤
+  - **根因**：SCStream 透過獨立 callback 投遞 video/audio sample buffer，速率不同，無法在 fragment boundary 維持同步
+  - **修復**：擴大跳過條件——只要 `recordMic` 或 `recordWinSound` 任一啟用就停用 `movieFragmentInterval`（僅純螢幕無音頻錄影才啟用 fragment 保護）
+  - 影響：螢幕 + 任何音頻錄影中斷時整檔可能損壞（與 v1.7.1 行為相同）；正常按 stop（含 Cmd+Q）仍正常
+
+### 已知限制（v1.7.4 更新後）
+
+| 錄影模式 | Fragmented MP4 保護 | 中斷時表現 |
+|---------|---------------------|-----------|
+| 純螢幕（無任何音頻） | ✅ 啟用 | 最多遺失 1 秒 |
+| 螢幕 + 任何音頻（系統音 / 麥克風 / 兩者） | ❌ 停用 | 整檔可能損壞 |
+| HDR | ❌ 停用 | 整檔可能損壞 |
+
+### 後續調查項目
+
+- 為何 AVAssetWriter fragmented mode 與 SCStream audio sample buffer 無法同步（可能解法：dispatch queue 序列化 append、segmented writing、或重寫 audio buffering）
+
 ## [1.7.3] - 2026-05-14
 
 ### 緊急修復 🚨
