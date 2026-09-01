@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/sparkle-project/Sparkle",
       "state" : {
-        "revision" : "066e75a8b3e99962685d6a90cdd5293ebffd9261",
-        "version" : "2.9.1"
+        "revision" : "ac2def288cbff5cfc7df3ffef6abdf45b72bcb0a",
+        "version" : "2.9.6"
       }
     },
     {
@@ -42,7 +42,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hidden-spectrum/SwiftLAME.git",
       "state" : {
-        "revision" : "e8256a8151594f47f103c742f684253c6c44871d"
+        "revision" : "45d1b021c2bd2bbd38b9669934c0584cda0d1b6b"
       }
     }
   ],

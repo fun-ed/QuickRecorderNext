@@ -220,7 +220,7 @@ It scans `saveDirectory` for `.mp4.mp4.mp4` / `.mov.mov.mov` / `.mp4.mp4` / `.mo
 (the temp markers used by the multi-track audio mixing flow when `recordMic + recordWinSound +
 remuxAudio` are all on) and notifies the user via macOS notification — does **not** auto-delete.
 
-### `.mp4.mp4.mp4` Triple Extension (Intentional, see `BUG_REPORT_TRIPLE_EXTENSION.md`)
+### `.mp4.mp4.mp4` Triple Extension (Intentional)
 
 When `remuxAudio + recordMic + recordWinSound` are all enabled, `RecordEngine.swift:381` writes
 to `<basename>.mp4.mp4.mp4` as a temp file. `SCContext.mixAudioTracks()` then strips two

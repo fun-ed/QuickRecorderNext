@@ -1,0 +1,21 @@
+{
+  "goal_id": "v1-8-0-maint-release",
+  "status": "completed",
+  "iteration": 2,
+  "builder_model": "GPT:5.6-Luna",
+  "inspector_model": "GPT:5.6-Sol",
+  "initial_sha": "29b5569cf2fec4200c69d07142da4f588b7ef602",
+  "created_at": "2026-09-01T11:18:59+08:00",
+  "history": [
+    {
+      "iteration": 1,
+      "verdict": "FAIL",
+      "summary": "Builder commit omits the required parenthesized (v1.8.0) suffix"
+    },
+    {
+      "iteration": 2,
+      "verdict": "PASS",
+      "summary": "Commit suffix fixed; replay, product tree, and DMG verified unchanged"
+    }
+  ]
+}

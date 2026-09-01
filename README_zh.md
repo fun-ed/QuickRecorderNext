@@ -47,9 +47,9 @@ brew install lihaoyun6/tap/quickrecorder
 > QuickRecorder 包含 Debug Log 功能用于故障排查。前往 **Help > View Debug Log** 查看诊断信息。日志文件位于 `/tmp/qr-debug.log`。
 
 **5. 如果录制过程中被强制结束 (Force Quit / Crash) 会怎样?**
-> 从 v1.7.2 起，QuickRecorder 启用 **Fragmented MP4** 写入 — 文件的索引每 1 秒写入一次，不再只在结束时写。即使录制中途 App 被强制结束或崩溃，**最多只损失最后 1 秒**的画面，其余片段仍可正常播放。下次启动 App 时，也会自动扫描保存目录，提示是否有未完成的录影。
+> 对于不含音频的纯屏幕录制，QuickRecorder 使用 **Fragmented MP4** 写入 — 文件的索引每 1 秒写入一次，不再只在结束时写。在此模式下，即使录制中途 App 被强制结束或崩溃，**最多只损失最后 1 秒**的画面，其余片段仍可正常播放。启用音频或 HDR 时会停用此保护，因为 Fragmented MP4 可能导致编码器或同步错误。下次启动 App 时，也会自动扫描保存目录，提示是否有未完成的录影。
 >
-> **注意:** `Record HDR` 开启时，此保护会**自动停用**（HEVC Main10 与 fragmented MP4 不相容，会触发编码器错误）。录制 HDR 内容时若中断，文件仍可能无法播放。
+> **注意:** 开启 `Record HDR` 或任何音频输入时，此保护会**自动停用**。录制 HDR 或音频内容时若中断，文件仍可能无法播放。
 
 **6. 推荐设定（降低损坏风险）:**
 > | 设定 | 推荐值 | 原因 |

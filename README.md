@@ -46,9 +46,9 @@ brew install lihaoyun6/tap/quickrecorder
 > QuickRecorder includes a debug log feature for troubleshooting. Go to **Help > View Debug Log** to view diagnostic information. The log file is located at `/tmp/qr-debug.log`.
 
 **5. What happens if recording is interrupted (force quit / crash)?**
-> Since v1.7.2, QuickRecorder uses **fragmented MP4** writing — the file's metadata index is written every 1 second instead of only at the end. So if the app is force-quit or crashes during recording, **you lose at most the last 1 second** of footage and the rest remains playable. On next launch, QuickRecorder will also notify you of any interrupted recordings detected in your save folder.
+> For pure screen recordings without audio, QuickRecorder uses **fragmented MP4** writing — the file's metadata index is written every 1 second instead of only at the end. In that mode, if the app is force-quit or crashes, **you lose at most the last 1 second** of footage and the rest remains playable. Audio inputs and HDR disable this protection because fragmented writing can trigger encoder or synchronization failures. On next launch, QuickRecorder will also notify you of any interrupted recordings detected in your save folder.
 >
-> **Note:** This protection is automatically **disabled** when `Record HDR` is on (HEVC Main10 + fragmented MP4 triggers an encoder error). If you record HDR content, abrupt termination may still corrupt the file.
+> **Note:** This protection is automatically **disabled** when `Record HDR` is on or any audio input is enabled. If you record HDR or audio content, abrupt termination may still corrupt the file.
 
 **6. Recommended settings to minimize corruption risk:**
 > | Setting | Recommended | Why |
