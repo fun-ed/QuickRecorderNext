@@ -25,6 +25,13 @@ xcodebuild \
   CODE_SIGNING_ALLOWED=YES \
   build
 
+# Ad-hoc builds must re-sign embedded frameworks, or hardened runtime library
+# validation rejects Sparkle's original Developer ID signature at launch
+# (dyld: "mapping process and mapped file ... have different Team IDs").
+find "$APP_PATH/Contents/Frameworks" -maxdepth 1 -name '*.framework' -print0 |
+  xargs -0 -I{} codesign --force --deep --sign - --timestamp=none {}
+codesign --force --sign - --timestamp=none "$APP_PATH"
+
 test -d "$APP_PATH"
 ditto "$APP_PATH" "$STAGING_DIR/QuickRecorder.app"
 ln -s /Applications "$STAGING_DIR/Applications"
