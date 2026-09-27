@@ -16,13 +16,26 @@ QuickRecorder is a lightweight, high-performance screen recorder for macOS built
 
 ## Build Commands
 
-Since this is an Xcode project without command-line build scripts, building must be done through Xcode:
+Full Xcode (not just Command Line Tools) is required. Scheme: `QuickRecorder`.
 
-1. Open `QuickRecorder.xcodeproj` in Xcode
-2. Build: `Cmd+B`
-3. Run: `Cmd+R`
+- **Dev build + run:** `./build.sh` — Debug build, unsigned, copies the app to
+  `/Applications/QuickRecorder-Dev.app` and runs it in the foreground (logs to stdout).
+- **Release DMG:** `./build-release.sh` — arm64 Release build, ad-hoc signed, output in
+  `build-release/` (gitignored). The version string `1.8.0` is **hardcoded** in the DMG
+  path and volume name; update it together with `MARKETING_VERSION` in
+  `QuickRecorder.xcodeproj/project.pbxproj`, `CHANGELOG.md`, and `appcast.xml` when releasing.
+  Embedded frameworks (Sparkle) must be re-signed ad-hoc, or hardened runtime rejects them
+  at launch with a Team ID mismatch; the script does this.
+- **Compile-only check:** `xcodebuild -project QuickRecorder.xcodeproj -scheme QuickRecorder -configuration Debug CODE_SIGNING_ALLOWED=NO build`
+- **Debug log:** `debugLog(...)` in `SCContext.swift` writes to `/tmp/qr-debug.log`
+  (also reachable from the app's Help menu).
 
-**Note:** Xcode (not just Command Line Tools) is required to build this project.
+There is no XCTest target. `verify_filename_logic.swift` is a standalone script
+(`swift verify_filename_logic.swift`) that simulates the triple-extension file naming logic.
+Recording behavior is verified manually: record in the target config, then check the file
+with `ffprobe` (duration should match wall-clock time).
+
+`CLAUDE_zh-TW.md` is a Traditional Chinese copy of this file; keep it in sync when editing.
 
 ## Dependencies
 
@@ -186,9 +199,12 @@ Permission checks are in `SCContext.swift`:
 
 `RecordEngine.swift` enables `movieFragmentInterval = 1.0s` on the main `AVAssetWriter`
 **only when neither `recordMic` nor `recordWinSound` is on AND `recordHDR == false`** —
-i.e. screen-only recording with no audio. With fragmented MP4 active in that mode, the
-moov atom is written every second, so if the app is force-killed or crashes, the file
-remains playable (losing at most the last 1 second).
+i.e. screen-only recording with no audio (the check is in `initVideo`). With fragmented MP4
+active in that mode, the moov atom is written every second, so if the app is force-killed or
+crashes, the file remains playable (losing at most the last 1 second).
+
+Separately, the audio-only `.qma` path sets `movieFragmentInterval = 0.5s` on its
+single-input mic writer (`filePath2`). It has not been checked against the stall described below.
 
 **Why audio inputs are skipped (v1.7.4 root cause finding)**: AVAssetWriter's
 fragmented mode requires every input to remain "ready" at each fragment boundary.

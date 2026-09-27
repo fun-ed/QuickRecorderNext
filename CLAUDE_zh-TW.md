@@ -16,13 +16,25 @@ QuickRecorder 是一個使用 SwiftUI 建構的輕量級、高效能 macOS 螢�
 
 ## 建置指令
 
-由於這是 Xcode 專案，沒有命令列建置腳本，必須透過 Xcode 建置：
+需要完整的 Xcode（僅有命令列工具不夠）。Scheme：`QuickRecorder`。
 
-1. 在 Xcode 中開啟 `QuickRecorder.xcodeproj`
-2. 建置：`Cmd+B`
-3. 執行：`Cmd+R`
+- **開發建置並執行：** `./build.sh`。Debug 建置、不簽章，複製到
+  `/Applications/QuickRecorder-Dev.app` 後在前景執行（日誌輸出到 stdout）。
+- **發布 DMG：** `./build-release.sh`。arm64 Release 建置、ad-hoc 簽章，輸出在
+  `build-release/`（已列入 gitignore）。DMG 路徑與磁碟區名稱中的版本字串 `1.8.0` 是
+  **寫死的**。發版時要與 `QuickRecorder.xcodeproj/project.pbxproj` 的 `MARKETING_VERSION`、
+  `CHANGELOG.md`、`appcast.xml` 一起更新。
+  內嵌的 framework（Sparkle）必須以 ad-hoc 重新簽署，否則 hardened runtime 會在啟動時以
+  Team ID 不符拒絕載入。腳本已處理這一步。
+- **僅編譯檢查：** `xcodebuild -project QuickRecorder.xcodeproj -scheme QuickRecorder -configuration Debug CODE_SIGNING_ALLOWED=NO build`
+- **除錯日誌：** `SCContext.swift` 中的 `debugLog(...)` 寫入 `/tmp/qr-debug.log`
+  （也可從 App 的 Help 選單開啟）。
 
-**注意：** 需要 Xcode（而非僅命令列工具）才能建置此專案。
+專案沒有 XCTest target。`verify_filename_logic.swift` 是獨立腳本
+（`swift verify_filename_logic.swift`），模擬三重副檔名的檔名處理邏輯。
+錄影行為以手動方式驗證：用目標設定錄一段，再用 `ffprobe` 檢查檔案（長度應與實際時間相符）。
+
+`CLAUDE.md` 是本檔的英文版，修改時請保持同步。
 
 ## 相依套件
 
@@ -179,3 +191,64 @@ QuickRecorder 需要多項系統權限：
 - H.264 硬體編碼器有解析度限制（不支援時會提示切換至 H.265）
 - macOS 12 不支援：系統音訊擷取 (`recordWinSound`)、預覽視窗
 - 某些功能（簡報者覆蓋、HDR）需要較新的 macOS 版本
+
+## 錄影檔案完整性（v1.7.2 起，v1.7.4 更新）
+
+### Fragmented MP4 保護（v1.7.4 後縮小範圍）
+
+`RecordEngine.swift` 只在 **`recordMic` 與 `recordWinSound` 都關閉，且 `recordHDR == false`** 時，
+才在主要 `AVAssetWriter` 啟用 `movieFragmentInterval = 1.0s`，也就是沒有音訊的純螢幕錄影
+（判斷位於 `initVideo`）。此模式下 moov atom 每秒寫入一次，App 被強制結束或當機時，
+檔案仍可播放（最多損失最後 1 秒）。
+
+另外，純音訊 `.qma` 路徑在只有單一 mic input 的 writer（`filePath2`）上設定
+`movieFragmentInterval = 0.5s`。這條路徑尚未對照下述的停滯問題檢查。
+
+**為何有音訊 input 就跳過（v1.7.4 根因）：** AVAssetWriter 的 fragmented 模式要求每個 input
+在每個 fragment 邊界都保持 ready。SCStream 以各自獨立、速率不同的 callback 送出 video 與
+audio sample buffer。第一個 1s fragment 之後，`awInput.isReadyForMoreMediaData` 會永久回傳
+false，後續 audio sample 被靜默丟棄（沒有日誌、沒有錯誤），writer 實際上不再接受新資料。
+對三個 v1.7.3 失敗檔執行 ffprobe，不論實際錄多久，都只有相同的 47 個 AAC frame
+（=1.0s @ 48kHz），符合「第一個 fragment 後停滯」的特徵。
+
+**為何 HDR 跳過：** HDR 使用的 HEVC Main10 搭配 fragmented MP4 會觸發
+`VTVideoEncoderMalfunctionErr (-16341)`。問題由 commit `a6c645e` 引入，v1.7.2 再次修正。
+
+**迭代歷史（不要重蹈覆轍）：**
+- v1.7.1（`a6c645e`）：完全停用 `movieFragmentInterval`，失去保護
+- v1.7.2（`81b8523`）：重新啟用，只跳過 HDR，導致含音訊的 5 分鐘錄影損壞
+- v1.7.3（`83c8b64`）：跳過多軌音訊（mic+sys+remux，3 個 input），2 個 input 的情況仍損壞
+- v1.7.4：只要有任何音訊 input 就跳過，這是唯一驗證可行的範圍
+
+修改影片編碼路徑時，除非已確認目前路徑原本就受保護，**不要**再無條件停用
+`movieFragmentInterval`。若找到讓 fragment 在有音訊 input 時也能運作的方法，視為新功能：
+開一個 TODO，並寫真正的驗證測試（在該設定下錄製 30 秒以上，ffprobe 長度 ≥ 實際時間）。
+
+### 孤兒錄影檔清理
+
+`QuickRecorderApp.swift::cleanupOrphanRecordings()` 在 `applicationDidFinishLaunching` 時執行。
+它掃描 `saveDirectory` 中的 `.mp4.mp4.mp4` / `.mov.mov.mov` / `.mp4.mp4` / `.mov.mov` 檔案
+（`recordMic + recordWinSound + remuxAudio` 全開時，多軌音訊混音流程使用的暫存標記），
+並以 macOS 通知告知使用者，**不會**自動刪除。
+
+### `.mp4.mp4.mp4` 三重副檔名（刻意設計）
+
+`remuxAudio + recordMic + recordWinSound` 全部開啟時，`RecordEngine.swift:381` 會寫入
+`<basename>.mp4.mp4.mp4` 作為暫存檔。`SCContext.mixAudioTracks()` 再去掉兩個副檔名，
+產生最終的 `<basename>.mp4`。若 App 在 `mixAudioTracks()` 執行期間結束
+（它透過 `AVAssetExportSession` 非同步執行），暫存檔會留在磁碟上。
+
+### 利於復原的建議編碼組合
+
+| 設定 | 建議值 | 原因 |
+|------|--------|------|
+| `encoder` | `h264` | GOP 短，fragment 復原乾淨 |
+| `videoFormat` | `mp4` | Fragmented MP4 在此容器最穩定 |
+| `recordHDR` | `false` | 避免 -16341，保持 fragmented MP4 啟用 |
+| `withAlpha` | `false` | Alpha 強制使用 HEVC+MOV，難以復原 |
+| `videoQuality` | `1.0`（高） | 位元率高，自足的影格較多 |
+| `frameRate` | `60` | 每秒可復原的資料較多 |
+| `remuxAudio` | `false`（選用） | 避免 `.mp4.mp4.mp4` 暫存檔風險 |
+
+以上也是專案預設值（見 `QuickRecorderApp.swift` 的 `applicationWillFinishLaunching`），
+唯一例外是 `remuxAudio`，在 macOS 13 以上預設為 `true`。
