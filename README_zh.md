@@ -5,6 +5,10 @@
 <h3 align="center">多功能、轻量化、高性能的 macOS 屏幕录制工具<br><a href="./README.md">[English Version]</a><br><a href="https://lihaoyun6.github.io/quickrecorder/">[软件主页]</a>
 </p>
 
+> 本仓库（[fun-ed/QuickRecorder](https://github.com/fun-ed/QuickRecorder)）是
+> [lihaoyun6/QuickRecorder](https://github.com/lihaoyun6/QuickRecorder) 的维护分支，包含录制文件完整性修复与依赖更新
+> （见 [CHANGELOG.md](./CHANGELOG.md)）。下方的软件主页与 Homebrew tap 属于上游项目。
+
 ## 运行截图
 <p align="center">
 <picture>
@@ -19,11 +23,23 @@
 - macOS 12.3 及更高版本  
 
 ### 安装:
-可[点此前往](../../releases/latest)下载最新版安装文件. 或使用homebrew安装:  
+可[点此前往](../../releases/latest)下载本分支的最新版安装文件.
+
+Homebrew tap 安装的是**上游**版本, 而非本分支:
 
 ```bash
 brew install lihaoyun6/tap/quickrecorder
 ```
+
+### 从源码构建:
+需要 Xcode 26 或更高版本 (KeyboardShortcuts 3.x 需要 swift-tools 6.2).
+
+```bash
+./build.sh           # Debug 构建, 安装到 /Applications/QuickRecorder-Dev.app 并运行
+./build-release.sh   # arm64 Release 构建, 在 build-release/ 生成 ad-hoc 签名的 DMG
+```
+
+Release DMG 仅做 ad-hoc 签名, 未经公证. 首次启动若被 macOS 阻止, 请在 **系统设置 > 隐私与安全性** 中允许.
 
 ### 特色 / 使用:
 - 使用 SwiftUI 编写, 体积小巧轻量化. 软件大小仅有不到 10MB, 无任何累赘功能. 
@@ -35,7 +51,7 @@ brew install lihaoyun6/tap/quickrecorder
 
 ## 常见问题
 **1. 主面板关闭之后在哪里重新打开?**  
-> 单击 QuickRecorder 的 Dock 栏图标即可随时重新呼出主功能面板.  
+> 单击 QuickRecorder 的 Dock 栏图标或菜单栏图标即可随时重新呼出主功能面板.  
 
 **2. 为什么 QuickRecorder 不是沙盒 App?**  
 > 苹果沙盒权限管理机制比较复杂, 使用起来麻烦. 加之 QuickRecorder 并没有上架 App Store的打算, 故没有做成沙盒 App.
@@ -76,6 +92,12 @@ brew install lihaoyun6/tap/quickrecorder
 
 [SwiftLAME](https://github.com/hidden-spectrum/SwiftLAME) @Hidden Spectrum
 > QuickRecorder 使用此swift库来处理 MP3 输出
+
+[Sparkle](https://github.com/sparkle-project/Sparkle) @sparkle-project
+> QuickRecorder 使用此框架进行应用内更新
+
+[AECAudioStream](https://github.com/lihaoyun6/AECAudioStream) / [MatrixColorSelector](https://github.com/lihaoyun6/MatrixColorSelector) @lihaoyun6
+> 用于麦克风回声消除与颜色选择器
 
 [ChatGPT](https://chat.openai.com) @OpenAI  
 > 注: 本项目部分代码使用 ChatGPT 生成或重构整理

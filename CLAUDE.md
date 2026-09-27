@@ -21,7 +21,7 @@ Full Xcode (not just Command Line Tools) is required. Scheme: `QuickRecorder`.
 - **Dev build + run:** `./build.sh` — Debug build, unsigned, copies the app to
   `/Applications/QuickRecorder-Dev.app` and runs it in the foreground (logs to stdout).
 - **Release DMG:** `./build-release.sh` — arm64 Release build, ad-hoc signed, output in
-  `build-release/` (gitignored). The version string `1.8.0` is **hardcoded** in the DMG
+  `build-release/` (gitignored). The version string `1.8.1` is **hardcoded** in the DMG
   path and volume name; update it together with `MARKETING_VERSION` in
   `QuickRecorder.xcodeproj/project.pbxproj`, `CHANGELOG.md`, and `appcast.xml` when releasing.
   Embedded frameworks (Sparkle) must be re-signed ad-hoc, or hardened runtime rejects them
@@ -41,13 +41,19 @@ with `ffprobe` (duration should match wall-clock time).
 
 This project uses Swift Package Manager with the following dependencies:
 
-- **Sparkle** (2.6.0+): Auto-update framework
-- **KeyboardShortcuts** (2.2.4+): Global keyboard shortcut handling
-- **SwiftLAME**: MP3 encoding support
-- **AECAudioStream**: Audio Echo Cancellation (AEC) support
-- **MatrixColorSelector**: Custom color picker UI
+- **Sparkle** (2.10.0+, up to next major): Auto-update framework. Feed URL is `SUFeedURL`
+  in `QuickRecorder/Info.plist` (points at this repo's `appcast.xml`)
+- **KeyboardShortcuts** (3.1.0+, up to next major): Global keyboard shortcut handling.
+  Needs swift-tools 6.2 (Xcode 26+)
+- **SwiftLAME** (pinned revision `45d1b02` = upstream `main` / tag `0.1.0`): MP3 encoding support
+- **AECAudioStream** (branch `main`): Audio Echo Cancellation (AEC) support
+- **MatrixColorSelector** (branch `main`): Custom color picker UI
 
-Dependencies are managed via Xcode's Swift Package Manager integration and will be fetched automatically when opening the project.
+Requirements live in `QuickRecorder.xcodeproj/project.pbxproj` (`XCRemoteSwiftPackageReference`);
+pins in `QuickRecorder.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`.
+After changing a requirement, run
+`xcodebuild -project QuickRecorder.xcodeproj -scheme QuickRecorder -resolvePackageDependencies`.
+Record each dependency change in `CHANGELOG.md`.
 
 ## Architecture
 

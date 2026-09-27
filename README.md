@@ -5,6 +5,10 @@
 <h3 align="center">A lightweight and high-performance screen recorder for macOS<br><a href="./README_zh.md">[中文版本]</a><br><a href="https://lihaoyun6.github.io/quickrecorder/">[Landing Page]</a>
 </p>
 
+> This repository ([fun-ed/QuickRecorder](https://github.com/fun-ed/QuickRecorder)) is a maintained fork of
+> [lihaoyun6/QuickRecorder](https://github.com/lihaoyun6/QuickRecorder). It carries recording-integrity fixes
+> and dependency updates (see [CHANGELOG.md](./CHANGELOG.md)). The landing page and Homebrew tap below belong to upstream.
+
 ## Screenshot
 <p align="center">
 <picture>
@@ -19,11 +23,23 @@
 - macOS 12.3 and Later
 
 ### Install:
-Download the latest installation file [here](../../releases/latest) or install via Homebrew:
+Download the latest installation file of this fork [here](../../releases/latest).
+
+The Homebrew tap installs the **upstream** build, not this fork:
 
 ```bash
 brew install lihaoyun6/tap/quickrecorder
 ```
+
+### Build from source:
+Requires Xcode 26 or later (KeyboardShortcuts 3.x needs swift-tools 6.2).
+
+```bash
+./build.sh           # Debug build, installs /Applications/QuickRecorder-Dev.app and runs it
+./build-release.sh   # arm64 Release build, ad-hoc signed DMG in build-release/
+```
+
+The release DMG is ad-hoc signed, not notarized. On first launch, macOS may block it; allow it in **System Settings > Privacy & Security**.
 
 ### Features/Usage:
 - You can use QuickRecorder to record your screens / windows / applications / mobile devices... etc.
@@ -74,6 +90,12 @@ brew install lihaoyun6/tap/quickrecorder
 
 [SwiftLAME](https://github.com/hidden-spectrum/SwiftLAME) @Hidden Spectrum
 > QuickRecorder uses this swift library to handle MP3 output
+
+[Sparkle](https://github.com/sparkle-project/Sparkle) @sparkle-project
+> QuickRecorder uses this framework for in-app updates
+
+[AECAudioStream](https://github.com/lihaoyun6/AECAudioStream) / [MatrixColorSelector](https://github.com/lihaoyun6/MatrixColorSelector) @lihaoyun6
+> Used for microphone echo cancellation and the color picker
 
 [ChatGPT](https://chat.openai.com) @OpenAI
 > Note: Part of the code in this project was generated or refactored using ChatGPT.

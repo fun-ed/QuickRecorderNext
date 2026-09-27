@@ -21,7 +21,7 @@ QuickRecorder 是一個使用 SwiftUI 建構的輕量級、高效能 macOS 螢�
 - **開發建置並執行：** `./build.sh`。Debug 建置、不簽章，複製到
   `/Applications/QuickRecorder-Dev.app` 後在前景執行（日誌輸出到 stdout）。
 - **發布 DMG：** `./build-release.sh`。arm64 Release 建置、ad-hoc 簽章，輸出在
-  `build-release/`（已列入 gitignore）。DMG 路徑與磁碟區名稱中的版本字串 `1.8.0` 是
+  `build-release/`（已列入 gitignore）。DMG 路徑與磁碟區名稱中的版本字串 `1.8.1` 是
   **寫死的**。發版時要與 `QuickRecorder.xcodeproj/project.pbxproj` 的 `MARKETING_VERSION`、
   `CHANGELOG.md`、`appcast.xml` 一起更新。
   內嵌的 framework（Sparkle）必須以 ad-hoc 重新簽署，否則 hardened runtime 會在啟動時以
@@ -40,13 +40,19 @@ QuickRecorder 是一個使用 SwiftUI 建構的輕量級、高效能 macOS 螢�
 
 此專案使用 Swift Package Manager，包含以下相依套件：
 
-- **Sparkle** (2.6.0+)：自動更新框架
-- **KeyboardShortcuts** (2.2.4+)：全域鍵盤快捷鍵處理
-- **SwiftLAME**：MP3 編碼支援
-- **AECAudioStream**：音訊回音消除 (AEC) 支援
-- **MatrixColorSelector**：自訂顏色選擇器 UI
+- **Sparkle**（2.10.0 以上，同一 major）：自動更新框架。更新來源為 `QuickRecorder/Info.plist`
+  的 `SUFeedURL`（指向本 repo 的 `appcast.xml`）
+- **KeyboardShortcuts**（3.1.0 以上，同一 major）：全域鍵盤快捷鍵處理。
+  需要 swift-tools 6.2（Xcode 26 以上）
+- **SwiftLAME**（固定 revision `45d1b02`，即上游 `main` / tag `0.1.0`）：MP3 編碼支援
+- **AECAudioStream**（`main` 分支）：音訊回音消除 (AEC) 支援
+- **MatrixColorSelector**（`main` 分支）：自訂顏色選擇器 UI
 
-相依套件透過 Xcode 的 Swift Package Manager 整合管理，開啟專案時會自動取得。
+版本需求寫在 `QuickRecorder.xcodeproj/project.pbxproj`（`XCRemoteSwiftPackageReference`），
+鎖定版本在 `QuickRecorder.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`。
+修改需求後執行
+`xcodebuild -project QuickRecorder.xcodeproj -scheme QuickRecorder -resolvePackageDependencies`。
+每次依賴變更都記錄在 `CHANGELOG.md`。
 
 ## 架構
 

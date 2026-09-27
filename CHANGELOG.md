@@ -1,5 +1,20 @@
 # 更新日誌
 
+## [1.8.1] - 2026-09-27
+
+### 依賴更新
+
+- Sparkle: 2.9.6 → 2.10.0
+- KeyboardShortcuts: 2.4.0 → 3.1.0（major 升級；3.0.0 的破壞性變更 `defaultShortcut` → `initialShortcut` 本專案未使用）
+- MatrixColorSelector: `0853e68`（main 最新提交，無變更）
+- AECAudioStream: `0eab971`（main 最新提交，無變更）
+- SwiftLAME: `45d1b02`（無變更）。此提交即上游 `main` 分支與 tag `0.1.0`。上游預設分支 `develop`（`e8256a8`）較新但未發布，本專案不跟進
+
+### 其他
+
+- 專案遷移至 `fun-ed/QuickRecorder`，Sparkle 更新來源 `SUFeedURL` 改指向新 repo 的 `appcast.xml`
+- 更新 README、CLAUDE.md 的建置說明與依賴版本
+
 ## [1.8.0] - 2026-09-01
 
 ### 依賴更新
