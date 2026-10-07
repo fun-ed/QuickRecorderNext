@@ -21,9 +21,11 @@ Full Xcode (not just Command Line Tools) is required. Scheme: `QuickRecorder`.
 - **Dev build + run:** `./build.sh` — Debug build, unsigned, copies the app to
   `/Applications/QuickRecorder-Dev.app` and runs it in the foreground (logs to stdout).
 - **Release DMG:** `./build-release.sh` — arm64 Release build, ad-hoc signed, output in
-  `build-release/` (gitignored). The version string `1.8.1` is **hardcoded** in the DMG
-  path and volume name; update it together with `MARKETING_VERSION` in
-  `QuickRecorder.xcodeproj/project.pbxproj`, `CHANGELOG.md`, and `appcast.xml` when releasing.
+  `build-release/` (gitignored). The version string `1.8.2` is **hardcoded** in the DMG
+  path and volume name; update it together with `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`
+  in `QuickRecorder.xcodeproj/project.pbxproj` and `CHANGELOG.md`.
+  Publishing a Sparkle update in `appcast.xml` separately requires a published artifact
+  and its valid EdDSA signature; preserve the existing feed when these are unavailable.
   Embedded frameworks (Sparkle) must be re-signed ad-hoc, or hardened runtime rejects them
   at launch with a Team ID mismatch; the script does this.
 - **Compile-only check:** `xcodebuild -project QuickRecorder.xcodeproj -scheme QuickRecorder -configuration Debug CODE_SIGNING_ALLOWED=NO build`
@@ -32,6 +34,13 @@ Full Xcode (not just Command Line Tools) is required. Scheme: `QuickRecorder`.
 
 There is no XCTest target. `verify_filename_logic.swift` is a standalone script
 (`swift verify_filename_logic.swift`) that simulates the triple-extension file naming logic.
+`swift verify_webcam_logic.swift` checks webcam-only ownership and lifecycle with stubs.
+`swift verify_webcam_screen_logic.swift` extracts the production backend and checks
+timeline adjustment, PiP composition, synthetic MOV/MP4 encoding and decoding, and
+codec-preserving audio remux without activating a camera or screen capture.
+These scripts do not verify real capture latency, permissions, device interruption,
+or long-running recording. Webcam acceptance still requires real recording/playback,
+measured A/V sync for Mode 2, and a 30-minute soak test.
 Recording behavior is verified manually: record in the target config, then check the file
 with `ffprobe` (duration should match wall-clock time).
 
@@ -87,6 +96,21 @@ Record each dependency change in `CHANGELOG.md`.
 - Mouse pointer and screen magnifier overlays
 - Version checking with Sparkle updater
 
+**Independent webcam modes:**
+- Mode 1: `WebcamRecorder` in `AVContext.swift`, macOS 12.3+, camera and optional microphone
+  to SDR MOV. Preview mirroring does not mirror the saved video.
+- Mode 2: `WebcamScreenRecorder` in `RecordEngine.swift`, macOS 13+, one display and camera
+  composited with Core Image into SDR MP4/MOV, capped at 1920×1080 and 30 fps.
+  Native capture clocks are converted to host time; video and audio use the same pause timeline.
+  PiP mirroring affects the output. Optional system and microphone audio can remain separate
+  or mix via audio-only M4A export followed by passthrough video mux.
+- Both own their capture/writer state independently of `SCContext.stream`; route ownership,
+  pause, stop, duration, shortcuts, and quit through the shared controls, not stream presence.
+  Keep `AVURLAsset` owners alive across asynchronous remux because `AVAssetTrack.asset` is weak.
+- Neither mode supports HDR, alpha, AEC, live microphone mute, or fragmented crash recovery.
+  Mode 1 does not capture system audio; Mode 2 excludes the app itself and rejects Presenter Overlay.
+  Preserve the old screen engine's fragment conditions.
+
 ### View Models (ViewModel/)
 
 UI components are organized by function:
@@ -95,7 +119,7 @@ UI components are organized by function:
 - `StatusBar.swift`: Menu bar status display
 - `AreaSelector.swift`: Region selection for area recording
 - `ScreenSelector.swift`, `WinSelector.swift`, `AppSelector.swift`: Capture target pickers
-- `CameraOverlayer.swift`: Camera overlay window for macOS 12/13
+- `CameraOverlayer.swift`: Legacy camera overlay and independent webcam mode setup/preview views
 - `QmaPlayer.swift`: Multi-track audio (.qma) player/editor
 - `VideoEditor.swift`: Post-recording trim interface
 

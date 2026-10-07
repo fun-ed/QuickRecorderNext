@@ -85,6 +85,9 @@ class SCContext {
     static var window: [SCWindow]?
     static var application: [SCRunningApplication]?
     static var streamType: StreamType?
+    static var isRecording: Bool {
+        streamType != nil || WebcamRecorder.shared.isBusy || WebcamScreenRecorder.shared.isBusy
+    }
     static var availableContent: SCShareableContent?
     static let excludedApps = ["", "com.apple.dock", "com.apple.screencaptureui", "com.apple.controlcenter", "com.apple.notificationcenterui", "com.apple.systemuiserver", "com.apple.WindowManager", "dev.mnpn.Azayaka", "com.gaosun.eul", "com.pointum.hazeover", "net.matthewpalmer.Vanilla", "com.dwarvesv.minimalbar", "com.bjango.istatmenus.status"]
     
@@ -340,6 +343,14 @@ class SCContext {
         formatter.allowedUnits = [.minute, .second]
         formatter.zeroFormattingBehavior = .pad
         formatter.unitsStyle = .positional
+        if WebcamScreenRecorder.shared.isBusy {
+            timePassed = WebcamScreenRecorder.shared.recordedDuration
+            return formatter.string(from: timePassed) ?? "Unknown".local
+        }
+        if streamType == .camera {
+            timePassed = WebcamRecorder.shared.recordedDuration
+            return formatter.string(from: timePassed) ?? "Unknown".local
+        }
         if isPaused { return formatter.string(from: timePassed) ?? "Unknown".local }
         timePassed = Date.now.timeIntervalSince(startTime ?? Date.now)
         return formatter.string(from: timePassed) ?? "Unknown".local
@@ -354,6 +365,14 @@ class SCContext {
     }
     
     static func pauseRecording() {
+        if WebcamScreenRecorder.shared.isBusy {
+            WebcamScreenRecorder.shared.pauseRecording()
+            return
+        }
+        if WebcamRecorder.shared.isBusy {
+            WebcamRecorder.shared.pauseRecording()
+            return
+        }
         isPaused.toggle()
         PopoverState.shared.isPaused = isPaused
         if !isPaused {
@@ -363,6 +382,14 @@ class SCContext {
     }
     
     static func stopRecording() {
+        if WebcamScreenRecorder.shared.isBusy {
+            WebcamScreenRecorder.shared.stopRecording()
+            return
+        }
+        if WebcamRecorder.shared.isBusy {
+            WebcamRecorder.shared.stopRecording()
+            return
+        }
         debugLog("stopRecording: streamType=\(String(describing: streamType)), sessionStarted=\(sessionStarted)")
         if ud.bool(forKey: "preventSleep") { SleepPreventer.shared.allowSleep() }
         autoStop = 0
@@ -605,7 +632,7 @@ class SCContext {
     }
 
     static func toggleMicrophoneMute() {
-        guard streamType != nil && ud.bool(forKey: "recordMic") && streamType != .idevice else { return }
+        guard streamType != nil && ud.bool(forKey: "recordMic") && streamType != .idevice && streamType != .camera && !WebcamScreenRecorder.shared.isBusy else { return }
         isMicMuted.toggle()
         PopoverState.shared.isMicMuted = isMicMuted
     }

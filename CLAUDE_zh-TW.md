@@ -21,9 +21,11 @@ QuickRecorder 是一個使用 SwiftUI 建構的輕量級、高效能 macOS 螢�
 - **開發建置並執行：** `./build.sh`。Debug 建置、不簽章，複製到
   `/Applications/QuickRecorder-Dev.app` 後在前景執行（日誌輸出到 stdout）。
 - **發布 DMG：** `./build-release.sh`。arm64 Release 建置、ad-hoc 簽章，輸出在
-  `build-release/`（已列入 gitignore）。DMG 路徑與磁碟區名稱中的版本字串 `1.8.1` 是
+  `build-release/`（已列入 gitignore）。DMG 路徑與磁碟區名稱中的版本字串 `1.8.2` 是
   **寫死的**。發版時要與 `QuickRecorder.xcodeproj/project.pbxproj` 的 `MARKETING_VERSION`、
-  `CHANGELOG.md`、`appcast.xml` 一起更新。
+  `CURRENT_PROJECT_VERSION` 和 `CHANGELOG.md` 一起更新。
+  在 `appcast.xml` 發布 Sparkle 更新另需已發布的產物及其有效 EdDSA 簽章；
+  缺少這些條件時保留既有 feed。
   內嵌的 framework（Sparkle）必須以 ad-hoc 重新簽署，否則 hardened runtime 會在啟動時以
   Team ID 不符拒絕載入。腳本已處理這一步。
 - **僅編譯檢查：** `xcodebuild -project QuickRecorder.xcodeproj -scheme QuickRecorder -configuration Debug CODE_SIGNING_ALLOWED=NO build`
@@ -32,6 +34,11 @@ QuickRecorder 是一個使用 SwiftUI 建構的輕量級、高效能 macOS 螢�
 
 專案沒有 XCTest target。`verify_filename_logic.swift` 是獨立腳本
 （`swift verify_filename_logic.swift`），模擬三重副檔名的檔名處理邏輯。
+`swift verify_webcam_logic.swift` 以替身檢查 webcam-only 的錄影所有權與生命週期。
+`swift verify_webcam_screen_logic.swift` 擷取正式 backend，檢查時間軸調整、子母畫面合成、
+模擬影格的 MOV／MP4 編碼與解碼，以及保留影片編碼的音訊混合，不啟動攝影機或螢幕擷取。
+這些腳本不驗證真實擷取延遲、權限、裝置中斷或長時間錄影。
+Webcam 驗收仍需實際錄影與播放、Mode 2 的影音同步量測，以及 30 分鐘持續錄影測試。
 錄影行為以手動方式驗證：用目標設定錄一段，再用 `ffprobe` 檢查檔案（長度應與實際時間相符）。
 
 `CLAUDE.md` 是本檔的英文版，修改時請保持同步。
@@ -86,6 +93,21 @@ QuickRecorder 是一個使用 SwiftUI 建構的輕量級、高效能 macOS 螢�
 - 滑鼠游標和螢幕放大鏡覆蓋
 - 使用 Sparkle 更新器進行版本檢查
 
+**獨立 Webcam 模式：**
+- Mode 1：`AVContext.swift` 的 `WebcamRecorder`，macOS 12.3 以上，攝影機與選用麥克風
+  輸出 SDR MOV。預覽鏡像不影響儲存影片。
+- Mode 2：`RecordEngine.swift` 的 `WebcamScreenRecorder`，macOS 13 以上，單一顯示器與
+  攝影機透過 Core Image 合成為 SDR MP4／MOV，最高 1920×1080、30 fps。
+  原生擷取時鐘轉換到 host time，影片與音訊共用暫停時間軸。
+  子母畫面鏡像會影響輸出。選用的系統音訊與麥克風可保留分軌，
+  或先匯出純音訊 M4A 混音，再以 passthrough 合併原始影片軌。
+- 兩者的擷取與 writer 狀態均獨立於 `SCContext.stream`；錄影所有權、暫停、停止、
+  計時、快捷鍵與退出需經共用控制判斷，不能只看 stream 是否存在。
+  非同步合併期間必須保留 `AVURLAsset`，因為 `AVAssetTrack.asset` 是弱參照。
+- 兩者皆不支援 HDR、透明影片、AEC、錄影中麥克風靜音或 fragments 中斷保護。
+  Mode 1 不擷取系統音訊；Mode 2 排除 App 本身，並拒絕 Presenter Overlay。
+  保留既有螢幕錄影引擎的 fragments 條件。
+
 ### 視圖模型 (ViewModel/)
 
 UI 元件按功能組織：
@@ -94,7 +116,7 @@ UI 元件按功能組織：
 - `StatusBar.swift`：選單列狀態顯示
 - `AreaSelector.swift`：區域錄製的範圍選擇
 - `ScreenSelector.swift`、`WinSelector.swift`、`AppSelector.swift`：擷取目標選擇器
-- `CameraOverlayer.swift`：macOS 12/13 的相機覆蓋視窗
+- `CameraOverlayer.swift`：既有相機覆蓋視窗，以及獨立 Webcam 模式的設定與預覽畫面
 - `QmaPlayer.swift`：多軌音訊 (.qma) 播放器/編輯器
 - `VideoEditor.swift`：錄製後修剪介面
 

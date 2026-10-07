@@ -88,10 +88,14 @@ struct ContentViewNew: View {
                 HStack {
                     ZStack(alignment: Alignment(horizontal: .center, vertical: .bottom)) {
                         Button(action: {
-                            if let display = SCContext.getSCDisplayWithMouse() {
-                                closeMainWindow()
-                                appDelegate.createCountdownPanel(screen: display) {
-                                    AppDelegate.shared.prepRecord(type: "audio", screens: SCContext.getSCDisplayWithMouse(), windows: nil, applications: nil)
+                            guard !SCContext.isRecording else { return }
+                            SCContext.updateAvailableContent {
+                                DispatchQueue.main.async {
+                                    guard !SCContext.isRecording, let display = SCContext.getSCDisplayWithMouse() else { return }
+                                    closeMainWindow()
+                                    appDelegate.createCountdownPanel(screen: display) {
+                                        AppDelegate.shared.prepRecord(type: "audio", screens: display, windows: nil, applications: nil)
+                                    }
                                 }
                             }
                         }, label: {
@@ -193,6 +197,26 @@ struct ContentViewNew: View {
                         .background(.primary.opacity(0.00001))
                     }.frame(height: 80)
                     Divider().frame(height: 70)
+                    Button(action: {
+                        guard !SCContext.isRecording else { return }
+                        PopoverState.shared.isShowing = false
+                        closeMainWindow()
+                        appDelegate.createNewWindow(view: WebcamRecordingView(), title: "Webcam".local)
+                    }, label: {
+                        SelectorView(title: "Webcam".local, symbol: "video").cornerRadius(8)
+                    }).buttonStyle(.plain)
+                    Divider().frame(height: 70)
+                    if #available(macOS 13, *) {
+                        Button(action: {
+                            guard !SCContext.isRecording else { return }
+                            PopoverState.shared.isShowing = false
+                            closeMainWindow()
+                            appDelegate.createNewWindow(view: WebcamScreenRecordingView(), title: "Webcam + Screen".local)
+                        }, label: {
+                            SelectorView(title: "Webcam + Screen".local, symbol: "person.crop.rectangle").cornerRadius(8)
+                        }).buttonStyle(.plain)
+                        Divider().frame(height: 70)
+                    }
                     Button(action: {
                         isPopoverShowing = true
                     }, label: {

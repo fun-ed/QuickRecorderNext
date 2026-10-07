@@ -1,5 +1,31 @@
 # 更新日誌
 
+## [1.8.2] - 2026-10-08
+
+### 新功能
+
+- 新增獨立 Webcam 錄影入口，macOS 12.3 以上可用；選擇攝影機與可選麥克風即可錄製 SDR MOV，不需要螢幕錄製權限。預覽鏡像只影響預覽，不會鏡像輸出影片。支援倒數、暫停／繼續、停止、自動停止與共用快捷鍵。
+- Webcam-only 模式不支援系統音訊、AEC、錄影中麥克風靜音、HDR 或透明影片。
+- 新增獨立 Webcam + Screen 模式，macOS 13 以上可錄製單一顯示器與攝影機子母畫面。可調整四角位置、大小及輸出鏡像，SDR 輸出最高 1920×1080、30 fps，容器為 MP4 或 MOV，使用 H.264／HEVC 並依可用編碼器回退。
+- Webcam + Screen 可選麥克風與系統音訊；兩者同時錄製時，可將音訊混成單一音軌，或保留分離音軌。靜止桌面不會中止 Webcam 畫面更新。
+- 兩種 Webcam 模式各自使用錄影後端，不與舊有螢幕錄影共用 writer。Webcam + Screen 不支援視窗、App 或區域擷取；QuickRecorder 視窗會排除在畫面外，且不可同時使用 macOS Presenter Overlay。
+- Webcam + Screen 不支援 HDR、透明影片、AEC 或錄影中麥克風靜音。既有螢幕錄影的 fragmented MP4 設定維持不變；兩種新 Webcam 模式都沒有 fragmented MP4 中斷保護，異常結束時檔案可能無法播放。
+
+### 修復
+
+- Webcam + Screen 錄影啟動時暫存並重播待處理影格，避免錄影時間軸建立期間遺失完整影格。
+- 修復非同步音訊混音與封裝的資產生命週期：保留來源影片與混音音訊資產，直到封裝完成。混音或封裝失敗時保留原始多軌錄影，並提供檔案位置。
+
+### 發行與文件
+
+- 專案遷移至 public `fun-ed/QuickRecorderNext`，舊 `fun-ed/QuickRecorder` 保留為 Git upstream。App 的 Sparkle feed URL 指向新 repo；1.8.2 以 GitHub Release 提供手動下載，不建立缺少有效產物簽章的 Sparkle 更新項目。
+- 更新 README、`CLAUDE.md` 與 `CLAUDE_zh-TW.md`，補充模式操作、離線驗證與實機驗收限制。
+
+### 驗證與限制
+
+- 離線檢查涵蓋 Webcam-only 模擬回呼，以及 Webcam + Screen 的生命週期、時間軸、待處理影格、合成器與 MP4／MOV 寫入和重封裝；不會使用實體攝影機或麥克風。
+- 尚未完成實體攝影機錄影與播放、以 100 ms 門檻量測影音同步、裝置中斷及 30 分鐘連續錄影驗證。1.8.2 發佈包僅提供 arm64，使用 ad-hoc 簽名且未經公證。
+
 ## [1.8.1] - 2026-09-27
 
 ### 依賴更新

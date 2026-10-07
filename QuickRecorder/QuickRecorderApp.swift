@@ -15,6 +15,7 @@ import KeyboardShortcuts
 import ServiceManagement
 import CoreMediaIO
 import Sparkle
+import Combine
 
 let isMacOS12 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 12
 let isMacOS14 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 14
@@ -129,6 +130,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
     var isResizing = false
     var presenterType = "OFF"
     var frameQueue = FixedLengthArray<CMTime>(maxLength: 20)
+    private var webcamTerminationObserver: AnyCancellable?
     
     @AppStorage("showOnDock")       var showOnDock: Bool = true
     @AppStorage("showMenubar")      var showMenubar: Bool = false
@@ -202,6 +204,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
         if let monitor = mouseMonitor { NSEvent.removeMonitor(monitor); mouseMonitor = nil }
     }
     
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard WebcamRecorder.shared.isBusy || WebcamScreenRecorder.shared.isBusy else { return .terminateNow }
+        if webcamTerminationObserver == nil {
+            let states = WebcamScreenRecorder.shared.isBusy
+                ? WebcamScreenRecorder.shared.$state
+                : WebcamRecorder.shared.$state
+            webcamTerminationObserver = states
+                .filter { $0 == .idle }
+                .first()
+                .sink { [weak self] _ in
+                    DispatchQueue.main.async {
+                        self?.webcamTerminationObserver = nil
+                        sender.reply(toApplicationShouldTerminate: true)
+                    }
+                }
+            SCContext.stopRecording()
+        }
+        return .terminateLater
+    }
+
     func applicationWillTerminate(_ aNotification: Notification) {
         if SCContext.stream != nil { SCContext.stopRecording() }
     }
@@ -215,7 +237,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
     }
     
     func applicationWillFinishLaunching(_ notification: Notification) {
-        scPerm = SCContext.updateAvailableContentSync() != nil
+        scPerm = CGPreflightScreenCaptureAccess()
+        if scPerm { _ = SCContext.updateAvailableContentSync() }
         
         let process = NSWorkspace.shared.runningApplications.filter({ $0.bundleIdentifier == "com.lihaoyun6.QuickRecorder" })
         if process.count > 1 {
@@ -327,40 +350,57 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
         
         KeyboardShortcuts.onKeyDown(for: .showPanel) {
             _ = self.applicationShouldHandleReopen(NSApp, hasVisibleWindows: true)
-            if SCContext.stream == nil { NSApp.activate(ignoringOtherApps: true) }
+            if !SCContext.isRecording { NSApp.activate(ignoringOtherApps: true) }
         }
         KeyboardShortcuts.onKeyDown(for: .saveFrame) { if SCContext.stream != nil { SCContext.saveFrame = true }}
         KeyboardShortcuts.onKeyDown(for: .screenMagnifier) { if SCContext.stream != nil { SCContext.isMagnifierEnabled.toggle() }}
-        KeyboardShortcuts.onKeyDown(for: .stop) { if SCContext.stream != nil { SCContext.stopRecording() }}
-        KeyboardShortcuts.onKeyDown(for: .pauseResume) { if SCContext.stream != nil { SCContext.pauseRecording() }}
+        KeyboardShortcuts.onKeyDown(for: .stop) { if SCContext.stream != nil || WebcamRecorder.shared.isBusy || WebcamScreenRecorder.shared.isBusy { SCContext.stopRecording() }}
+        KeyboardShortcuts.onKeyDown(for: .pauseResume) { if SCContext.stream != nil || WebcamRecorder.shared.isBusy || WebcamScreenRecorder.shared.isBusy { SCContext.pauseRecording() }}
         KeyboardShortcuts.onKeyDown(for: .toggleMicMute) {
             if SCContext.stream != nil && ud.bool(forKey: "recordMic") {
                 SCContext.toggleMicrophoneMute()
             }
         }
         KeyboardShortcuts.onKeyDown(for: .startWithAudio) {[self] in
-            if SCContext.streamType != nil { return }
-            closeAllWindow()
-            prepRecord(type: "audio", screens: SCContext.getSCDisplayWithMouse(), windows: nil, applications: nil, fastStart: true)
+            guard !SCContext.isRecording else { return }
+            SCContext.updateAvailableContent {
+                DispatchQueue.main.async {
+                    guard !SCContext.isRecording else { return }
+                    closeAllWindow()
+                    self.prepRecord(type: "audio", screens: SCContext.getSCDisplayWithMouse(), windows: nil, applications: nil, fastStart: true)
+                }
+            }
         }
         KeyboardShortcuts.onKeyDown(for: .startWithScreen) {[self] in
-            if SCContext.stream != nil { return }
-            closeAllWindow()
-            prepRecord(type: "display", screens: SCContext.getSCDisplayWithMouse(), windows: nil, applications: nil, fastStart: true)
+            guard !SCContext.isRecording else { return }
+            SCContext.updateAvailableContent {
+                DispatchQueue.main.async {
+                    guard !SCContext.isRecording else { return }
+                    closeAllWindow()
+                    self.prepRecord(type: "display", screens: SCContext.getSCDisplayWithMouse(), windows: nil, applications: nil, fastStart: true)
+                }
+            }
         }
         KeyboardShortcuts.onKeyDown(for: .startWithArea) {[self] in
-            if SCContext.stream != nil { return }
-            closeAllWindow()
-            showAreaSelector(size: NSSize(width: 600, height: 450))
+            guard !SCContext.isRecording else { return }
+            SCContext.updateAvailableContent {
+                DispatchQueue.main.async {
+                    guard !SCContext.isRecording else { return }
+                    closeAllWindow()
+                    self.showAreaSelector(size: NSSize(width: 600, height: 450))
+                }
+            }
         }
         KeyboardShortcuts.onKeyDown(for: .startWithWindow) { [self] in
-            if SCContext.stream != nil { return }
-            closeAllWindow()
-            let frontmostApp = NSWorkspace.shared.frontmostApplication
-            if let pid = frontmostApp?.processIdentifier {
-                guard let scWindow = SCContext.getWindows().first(where: { $0.owningApplication?.processID == pid && $0.title != "" && $0.isOnScreen }) else { return }
-                prepRecord(type: "window", screens: SCContext.getSCDisplayWithMouse(), windows: [scWindow], applications: nil, fastStart: true)
-                return
+            guard !SCContext.isRecording else { return }
+            let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+            SCContext.updateAvailableContent {
+                DispatchQueue.main.async {
+                    guard !SCContext.isRecording, let pid = frontmostPID else { return }
+                    guard let scWindow = SCContext.getWindows().first(where: { $0.owningApplication?.processID == pid && $0.title != "" && $0.isOnScreen }) else { return }
+                    closeAllWindow()
+                    self.prepRecord(type: "window", screens: SCContext.getSCDisplayWithMouse(), windows: [scWindow], applications: nil, fastStart: true)
+                }
             }
         }
         updateStatusBar()
@@ -392,12 +432,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
     }
     
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if SCContext.stream == nil {
+        if !SCContext.isRecording {
             let w1 = NSApp.windows.filter({ !$0.title.contains("Item-0") && !$0.title.isEmpty && $0.isVisible })
             let w2 = w1.filter({ !$0.title.contains(".qma") })
             if (!w1.isEmpty && w2.isEmpty) || w1.isEmpty {
                 let offset = (!showOnDock && !showMenubar) ? 127 : 0
-                let width = isMacOS12 ? 800 : 928
+                let width = isMacOS12 ? 928 : 1184
                 let mainPanel = EscPanel(contentRect: NSRect(x: 0, y: 0, width: width + offset, height: 100), styleMask: [.fullSizeContentView, .nonactivatingPanel], backing: .buffered, defer: false)
                 mainPanel.contentView = NSHostingView(rootView: ContentView())
                 mainPanel.title = "QuickRecorder".local
@@ -418,6 +458,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
                 if #unavailable(macOS 13) { NSApp.activate(ignoringOtherApps: true) }
                 PopoverState.shared.isShowing = false
             }
+        } else if WebcamScreenRecorder.shared.isBusy {
+            NSApp.windows.first(where: { $0.title == "Webcam + Screen".local })?.makeKeyAndOrderFront(nil)
         }
         return false
     }
@@ -470,14 +512,18 @@ func findNSSplitVIew(view: NSView?) -> NSSplitView? {
 
 func getStatusBarWidth() -> CGFloat {
     @AppStorage("miniStatusBar") var miniStatusBar: Bool = false
+    if WebcamScreenRecorder.shared.isBusy && SCContext.streamType != nil {
+        return miniStatusBar ? 68 : 114
+    }
     var width = 158.0
     switch SCContext.streamType {
     case nil: width = miniStatusBar ? 36.0 : 36.0
     case .idevice: width = miniStatusBar ? 68.0 : 138.0
     case .systemaudio: width = miniStatusBar ? 68.0 : 114.0
+    case .camera: width = miniStatusBar ? 68.0 : 114.0
     default: width = miniStatusBar ? 78.0 : 158.0
     }
-    if SCContext.streamType != nil && ud.bool(forKey: "recordMic") && SCContext.streamType != .idevice {
+    if SCContext.streamType != nil && ud.bool(forKey: "recordMic") && SCContext.streamType != .idevice && SCContext.streamType != .camera {
         width += 20.0
     }
     return width

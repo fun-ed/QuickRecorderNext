@@ -5,9 +5,11 @@
 <h3 align="center">A lightweight and high-performance screen recorder for macOS<br><a href="./README_zh.md">[中文版本]</a><br><a href="https://lihaoyun6.github.io/quickrecorder/">[Landing Page]</a>
 </p>
 
-> This repository ([fun-ed/QuickRecorder](https://github.com/fun-ed/QuickRecorder)) is a maintained fork of
-> [lihaoyun6/QuickRecorder](https://github.com/lihaoyun6/QuickRecorder). It carries recording-integrity fixes
-> and dependency updates (see [CHANGELOG.md](./CHANGELOG.md)). The landing page and Homebrew tap below belong to upstream.
+> This repository ([fun-ed/QuickRecorderNext](https://github.com/fun-ed/QuickRecorderNext)) continues
+> [fun-ed/QuickRecorder](https://github.com/fun-ed/QuickRecorder), a maintained fork of
+> [lihaoyun6/QuickRecorder](https://github.com/lihaoyun6/QuickRecorder). It adds independent webcam modes
+> alongside recording-integrity fixes and dependency updates (see [CHANGELOG.md](./CHANGELOG.md)).
+> The landing page and Homebrew tap below belong to the original upstream.
 
 ## Screenshot
 <p align="center">
@@ -23,7 +25,7 @@
 - macOS 12.3 and Later
 
 ### Install:
-Download the latest installation file of this fork [here](../../releases/latest).
+Download the latest release DMG of this fork [here](../../releases/latest). QuickRecorder 1.8.2 is build 182 and is available for arm64 only. Open the DMG and drag `QuickRecorder.app` to the Applications folder.
 
 The Homebrew tap installs the **upstream** build, not this fork:
 
@@ -39,7 +41,10 @@ Requires Xcode 26 or later (KeyboardShortcuts 3.x needs swift-tools 6.2).
 ./build-release.sh   # arm64 Release build, ad-hoc signed DMG in build-release/
 ```
 
-The release DMG is ad-hoc signed, not notarized. On first launch, macOS may block it; allow it in **System Settings > Privacy & Security**.
+The 1.8.2 release DMG is ad-hoc signed, not notarized. On first launch, macOS may block it; allow it in **System Settings > Privacy & Security**.
+Use GitHub Releases for 1.8.2. A Sparkle update-feed entry is not published until a matching
+artifact signature is available.
+
 
 ### Features/Usage:
 - You can use QuickRecorder to record your screens / windows / applications / mobile devices... etc.
@@ -47,6 +52,30 @@ The release DMG is ad-hoc signed, not notarized. On first launch, macOS may bloc
 - QuickRecorder supports driver-free audio loopback recording, mouse highlighting, screen magnifier and many more useful features.  
 - The new **"[Presenter Overlay](https://support.apple.com/guide/facetime/presenter-overlay-video-conferencing-fctm6333f4bd/mac)"** in macOS 14 was fully supported by QuickRecorder, which can overlay the camera in real time on your recording *(macOS 12/13 can only use camera floating window)*  
 - QuickRecorder is able to record `HEVC with Alpha` video format, that can contain alpha channel in the output file *(currently only iMovie and FCPX support this feature)*  
+
+### Webcam recording
+
+Open the main panel and choose **Webcam** for webcam-only recording or **Webcam + Screen** to record a display with a webcam picture-in-picture. These are separate recording modes, not options in the existing screen/window capture flow.
+
+**Webcam** works on macOS 12.3 and later. Select a camera and, if wanted, a microphone. It does not need Screen Recording permission or capture system audio. Microphone mute, echo cancellation, HDR, and alpha transparency are not supported. Start the preview, then choose **Start recording**. The saved video is SDR MOV. **Mirror preview** affects only the preview, not the saved video. Camera permission is required; microphone permission is needed if you select a microphone.
+
+**Webcam + Screen** requires macOS 13 or later, camera permission, and Screen Recording permission. Select one display, a camera, and optionally a microphone. You can also record system audio. Choose the picture-in-picture corner and size; **Mirror webcam in saved video** changes the saved image. The mode is SDR only, with output up to 1920×1080 and 30 fps, in MP4 or MOV with the selected H.264 or HEVC setting when supported. HDR, alpha transparency, microphone mute, and echo cancellation are not supported. If you record both system audio and microphone, choose whether to mix them into one track or keep separate tracks. QuickRecorder windows are excluded. Turn off macOS Presenter Overlay before recording. Window, app, and region capture are not available in this mode.
+
+Both modes support countdown, pause/resume, stop, and optional auto-stop. Use the mode window's controls or the configured recording shortcuts. Files go to the selected save folder. After stopping, wait until **Saving recording…** finishes before quitting, especially when Webcam + Screen is mixing audio.
+
+Neither Webcam mode uses the fragmented MP4 protection described below. A crash or force quit can leave its output unplayable.
+
+### Offline verification
+
+Run these commands from the repository root:
+
+```bash
+swift verify_filename_logic.swift
+swift verify_webcam_logic.swift
+swift verify_webcam_screen_logic.swift
+```
+
+The filename script checks triple-extension naming. The Webcam script exercises simulated camera output callbacks, not physical devices. The Webcam + Screen script checks production-extracted lifecycle, timeline, audio-pause, pending-frame, compositor, and audio-remux logic, including synthetic MP4/MOV encode/decode and codec-preserving remux. These offline checks do not validate real camera recording or playback, measured audio/video sync, device disconnects, or a 30-minute recording soak.
 
 ## Q&A
 **1. Where can I reopen the main panel after closing it?**
@@ -56,17 +85,17 @@ The release DMG is ad-hoc signed, not notarized. On first launch, macOS may bloc
 > QuickRecorder has no plans to be uploaded to the App Store, so it does not need to be designed as a sandbox app.  
 
 **3. How to independently control the volume of system sound and sound from microphone in other video editor?**
-> QuickRecorder will merge the audio input from the microphone to the main audio track after recording by default. If you need to edit the video, you can turn off the `Record Microphone to Main Track` option in the settings panel. After turning off, the system sound and sound from microphone will be recorded into two audio tracks and can be edited independently.
+> In existing screen-capture modes, QuickRecorder merges microphone audio into the main track by default. Turn off `Record Microphone to Main Track` to keep system audio and microphone audio on separate tracks. In Webcam + Screen, this option is in the mode window and appears when both inputs are selected.
 
 **4. How can I troubleshoot recording issues?**
 > QuickRecorder includes a debug log feature for troubleshooting. Go to **Help > View Debug Log** to view diagnostic information. The log file is located at `/tmp/qr-debug.log`.
 
 **5. What happens if recording is interrupted (force quit / crash)?**
-> For pure screen recordings without audio, QuickRecorder uses **fragmented MP4** writing — the file's metadata index is written every 1 second instead of only at the end. In that mode, if the app is force-quit or crashes, **you lose at most the last 1 second** of footage and the rest remains playable. Audio inputs and HDR disable this protection because fragmented writing can trigger encoder or synchronization failures. On next launch, QuickRecorder will also notify you of any interrupted recordings detected in your save folder.
+> In the existing screen-capture modes, only recordings without audio or HDR use **fragmented MP4**. QuickRecorder writes the metadata index every second, so a force quit or crash can lose at most the last second of those recordings. Any audio input or HDR disables this protection because fragmented writing can cause encoder or synchronization failures.
 >
-> **Note:** This protection is automatically **disabled** when `Record HDR` is on or any audio input is enabled. If you record HDR or audio content, abrupt termination may still corrupt the file.
+> The independent **Webcam** and **Webcam + Screen** modes do not use fragmented MP4; a crash or force quit may leave those files unplayable. QuickRecorder also notifies you about interrupted recordings found in the save folder on next launch.
 
-**6. Recommended settings to minimize corruption risk:**
+**6. Recommended settings for existing screen-capture modes to reduce interruption risk:**
 > | Setting | Recommended | Why |
 > |---------|-------------|-----|
 > | Encoder | **H.264** | Short GOP — recovers more cleanly after interruption |
@@ -76,7 +105,7 @@ The release DMG is ad-hoc signed, not notarized. On first launch, macOS may bloc
 > | Quality | **High** | Higher bitrate = more self-contained frames |
 > | Frame Rate | **60** | More data per second to recover |
 >
-> If you use the multi-track audio mode (`Record Microphone to Main Track` + system audio + mic all on), **wait 10–15 seconds after pressing stop** before quitting the app, so the audio mixing process can finish — otherwise a temporary `.mp4.mp4.mp4` file may remain on disk.
+> In existing screen-capture modes, if you record system audio and microphone audio with `Record Microphone to Main Track` enabled, **wait 10–15 seconds after pressing stop** before quitting so QuickRecorder can mix the audio. Otherwise, a temporary `.mp4.mp4.mp4` file may remain on disk.
 
 ## Donate
 <img src="./img/donate.png" width="350"/>

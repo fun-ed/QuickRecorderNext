@@ -21,10 +21,23 @@ struct StatusBarItem: View {
     @State private var recordingLength = "00:00"
     //@State private var isPassed = SCContext.isPaused
     @StateObject private var popoverState = PopoverState.shared
+    @ObservedObject private var webcamRecorder = WebcamRecorder.shared
+    @ObservedObject private var webcamScreenRecorder = WebcamScreenRecorder.shared
     //@NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @AppStorage("miniStatusBar") private var miniStatusBar: Bool = false
     //@AppStorage("highlightMouse") private var highlightMouse: Bool = false
     private var appDelegate = AppDelegate.shared
+
+    private var usesDedicatedWebcamControls: Bool {
+        SCContext.streamType == .camera || webcamScreenRecorder.isBusy
+    }
+
+    private var pauseUnavailable: Bool {
+        if webcamScreenRecorder.isBusy {
+            return webcamScreenRecorder.state != .recording && webcamScreenRecorder.state != .paused
+        }
+        return SCContext.streamType == .camera && webcamRecorder.state != .recording && webcamRecorder.state != .paused
+    }
     
     var body: some View {
         HStack(spacing: 0) {
@@ -59,14 +72,15 @@ struct StatusBarItem: View {
                                     Button(action: {
                                         SCContext.pauseRecording()
                                     }, label: {
-                                        Image(systemName: popoverState.isPaused ? "play.circle.fill" : "pause.circle.fill")
+                                        Image(systemName: (webcamScreenRecorder.isBusy ? webcamScreenRecorder.isPaused : popoverState.isPaused) ? "play.circle.fill" : "pause.circle.fill")
                                             .font(.system(size: 16))
                                             .foregroundStyle(.white)
                                             .frame(width: 16, alignment: .center)
                                     }).buttonStyle(.plain)
+                                    .disabled(pauseUnavailable)
 
                                     // Add microphone toggle button for audio recording with mic
-                                    if ud.bool(forKey: "recordMic") && SCContext.streamType != .idevice {
+                                    if ud.bool(forKey: "recordMic") && SCContext.streamType != .idevice && !usesDedicatedWebcamControls {
                                         Button(action: {
                                             SCContext.toggleMicrophoneMute()
                                         }, label: {
@@ -90,7 +104,7 @@ struct StatusBarItem: View {
                                             .opacity(deviceWindowIsShowing ? 1 : 0.7)
                                     }).buttonStyle(.plain)
                                 }
-                                if SCContext.streamType != .systemaudio && SCContext.streamType != .idevice && SCContext.streamType != .window {
+                                if SCContext.streamType != .systemaudio && SCContext.streamType != .idevice && SCContext.streamType != .window && !usesDedicatedWebcamControls {
                                     Button(action:{
                                         popoverState.isShowing = true
                                     }, label: {
@@ -130,14 +144,15 @@ struct StatusBarItem: View {
                                     Button(action: {
                                         SCContext.pauseRecording()
                                     }, label: {
-                                        Image(systemName: popoverState.isPaused ? "play.circle.fill" : "pause.circle.fill")
+                                        Image(systemName: (webcamScreenRecorder.isBusy ? webcamScreenRecorder.isPaused : popoverState.isPaused) ? "play.circle.fill" : "pause.circle.fill")
                                             .font(.system(size: 16))
                                             .foregroundStyle(.white)
                                             .frame(width: 16, alignment: .center)
                                     }).buttonStyle(.plain)
+                                    .disabled(pauseUnavailable)
 
                                     // Add microphone toggle button for audio recording with mic
-                                    if ud.bool(forKey: "recordMic") && SCContext.streamType != .idevice {
+                                    if ud.bool(forKey: "recordMic") && SCContext.streamType != .idevice && !usesDedicatedWebcamControls {
                                         Button(action: {
                                             SCContext.toggleMicrophoneMute()
                                         }, label: {
@@ -161,8 +176,13 @@ struct StatusBarItem: View {
                     CameraPopoverView(closePopover: { popoverState.isShowing = false })
                 }
                 .onReceive(updateTimer) { t in
-                    recordingLength = SCContext.getRecordingLength()
-                    let timePassed = Date.now.timeIntervalSince(SCContext.startTime ?? t)
+                    recordingLength = webcamRecorder.state == .finishing || webcamScreenRecorder.state == .finishing
+                        ? "Saving…".local : SCContext.getRecordingLength()
+                    let timePassed = webcamScreenRecorder.isBusy
+                        ? webcamScreenRecorder.recordedDuration
+                        : (SCContext.streamType == .camera
+                            ? webcamRecorder.recordedDuration
+                            : Date.now.timeIntervalSince(SCContext.startTime ?? t))
                     if SCContext.autoStop != 0 && timePassed / 60 >= CGFloat(SCContext.autoStop) { SCContext.stopRecording() }
                     if let visible = statusBarItem.button?.window?.occlusionState.contains(.visible) {
                         if visible { NSApp.windows.first(where: { $0.title == "Recording Controller".local })?.close(); return }
@@ -179,7 +199,7 @@ struct StatusBarItem: View {
                     }
                 }
                 if !miniStatusBar {
-                    if SCContext.streamType != .systemaudio {
+                    if SCContext.streamType != .systemaudio && !usesDedicatedWebcamControls {
                         if SCContext.streamType != .idevice {
                             Button(action:{
                                 popoverState.isShowing = true
@@ -215,6 +235,14 @@ struct StatusBarItem: View {
                 }
             } else if ud.bool(forKey: "showMenubar") {
                 Button(action: {
+                    if webcamScreenRecorder.isBusy {
+                        NSApp.windows.first(where: { $0.title == "Webcam + Screen".local })?.makeKeyAndOrderFront(nil)
+                        return
+                    }
+                    if webcamRecorder.isBusy {
+                        NSApp.windows.first(where: { $0.title == "Webcam".local })?.makeKeyAndOrderFront(nil)
+                        return
+                    }
                     popoverState.isShowing = true
                 }, label: {
                     ZStack {

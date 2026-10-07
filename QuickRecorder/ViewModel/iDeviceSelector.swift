@@ -54,6 +54,7 @@ struct iDevicePopoverView: View {
             } else {
                 ForEach(devices.indices, id: \.self) { index in
                     Button(action: {
+                        guard !SCContext.isRecording else { return }
                         closePopover()
                         closeAllWindow()
                         DispatchQueue.global().async {

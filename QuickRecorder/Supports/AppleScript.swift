@@ -11,7 +11,7 @@ import ScreenCaptureKit
 
 class selectScreen: NSScriptCommand {
     override func performDefaultImplementation() -> Any? {
-        if SCContext.stream != nil {
+        if SCContext.isRecording {
             createAlert(title: "Error".local, message: "Already recording!".local, button1: "OK".local).runModal()
             return nil
         }
@@ -43,7 +43,7 @@ class selectScreen: NSScriptCommand {
 
 class selectArea: NSScriptCommand {
     override func performDefaultImplementation() -> Any? {
-        if SCContext.stream != nil {
+        if SCContext.isRecording {
             createAlert(title: "Error".local, message: "Already recording!".local, button1: "OK".local).runModal()
             return nil
         }
@@ -70,7 +70,7 @@ class selectArea: NSScriptCommand {
 
 class selectApps: NSScriptCommand {
     override func performDefaultImplementation() -> Any? {
-        if SCContext.stream != nil {
+        if SCContext.isRecording {
             createAlert(title: "Error".local, message: "Already recording!".local, button1: "OK".local).runModal()
             return nil
         }
@@ -121,7 +121,7 @@ class selectApps: NSScriptCommand {
 
 class selectWindows: NSScriptCommand {
     override func performDefaultImplementation() -> Any? {
-        if SCContext.stream != nil {
+        if SCContext.isRecording {
             createAlert(title: "Error".local, message: "Already recording!".local, button1: "OK".local).runModal()
             return nil
         }
@@ -179,7 +179,7 @@ class selectWindows: NSScriptCommand {
 
 class recordAudio: NSScriptCommand {
     override func performDefaultImplementation() -> Any? {
-        if SCContext.stream != nil {
+        if SCContext.isRecording {
             createAlert(title: "Error".local, message: "Already recording!".local, button1: "OK".local).runModal()
             return nil
         }
@@ -200,7 +200,7 @@ class recordAudio: NSScriptCommand {
 
 class setPreferences: NSScriptCommand {
     override func performDefaultImplementation() -> Any? {
-        if SCContext.stream != nil {
+        if SCContext.isRecording {
             createAlert(title: "Error".local, message: "Already recording!".local, button1: "OK".local).runModal()
             return nil
         }
