@@ -25,7 +25,7 @@
 - macOS 12.3 and Later
 
 ### Install:
-Download the latest release DMG of this fork [here](../../releases/latest). QuickRecorder 1.8.2 is build 182 and is available for arm64 only. Open the DMG and drag `QuickRecorder.app` to the Applications folder.
+Download the latest release DMG of this fork [here](https://github.com/fun-ed/QuickRecorderNext/releases/latest). QuickRecorder 1.8.2 is build 182 and is available for arm64 only. Open the DMG and drag `QuickRecorder.app` to the Applications folder.
 
 The Homebrew tap installs the **upstream** build, not this fork:
 

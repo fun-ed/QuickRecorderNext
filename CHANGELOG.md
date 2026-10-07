@@ -19,7 +19,7 @@
 ### 發行與文件
 
 - 專案遷移至 public `fun-ed/QuickRecorderNext`，舊 `fun-ed/QuickRecorder` 保留為 Git upstream。App 的 Sparkle feed URL 指向新 repo；1.8.2 以 GitHub Release 提供手動下載，不建立缺少有效產物簽章的 Sparkle 更新項目。
-- 更新 README、`CLAUDE.md` 與 `CLAUDE_zh-TW.md`，補充模式操作、離線驗證與實機驗收限制。
+- 更新 README、`CLAUDE.md` 與 `CLAUDE_zh-TW.md`，補充模式操作、離線驗證與實機驗收限制；App「關於」視窗四個語系的原始碼連結及 Markdown 下載入口均指向 `fun-ed/QuickRecorderNext`。
 
 ### 驗證與限制
 

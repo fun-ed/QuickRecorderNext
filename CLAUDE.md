@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 QuickRecorder is a lightweight, high-performance screen recorder for macOS built with SwiftUI. It supports recording screens, windows, applications, mobile devices, and system audio with features like audio loopback recording, mouse highlighting, screen magnifier, and HDR video capture.
 
+The maintained repository is [fun-ed/QuickRecorderNext](https://github.com/fun-ed/QuickRecorderNext).
+For GitHub publishing, use the `fun-ed` account and explicitly pass `--repo fun-ed/QuickRecorderNext`.
+Keep the app's About-panel source links and `Info.plist` update-feed URL aligned with this repository.
+
 **Key Technologies:**
 - SwiftUI for the user interface
 - ScreenCaptureKit (SCStreamKit) for screen recording

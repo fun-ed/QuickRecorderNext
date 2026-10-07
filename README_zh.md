@@ -25,7 +25,7 @@
 - macOS 12.3 及更高版本  
 
 ### 安装:
-可[点此前往](../../releases/latest)下载本分支的最新版 DMG。QuickRecorder 1.8.2 是 build 182，目前仅提供 arm64 版本。打开 DMG，将 `QuickRecorder.app` 拖入“应用程序”文件夹.
+可[点此前往](https://github.com/fun-ed/QuickRecorderNext/releases/latest)下载本分支的最新版 DMG。QuickRecorder 1.8.2 是 build 182，目前仅提供 arm64 版本。打开 DMG，将 `QuickRecorder.app` 拖入“应用程序”文件夹.
 
 Homebrew tap 安装的是**上游**版本, 而非本分支:
 

@@ -6,6 +6,10 @@
 
 QuickRecorder 是一個使用 SwiftUI 建構的輕量級、高效能 macOS 螢幕錄製工具。支援錄製螢幕、視窗、應用程式、行動裝置和系統音訊，具備音訊回送錄製、滑鼠高亮、螢幕放大鏡和 HDR 影片擷取等功能。
 
+維護中的 repo 是 [fun-ed/QuickRecorderNext](https://github.com/fun-ed/QuickRecorderNext)。
+GitHub 發行使用 `fun-ed` 帳號，並明確指定 `--repo fun-ed/QuickRecorderNext`。
+App「關於」視窗的原始碼連結，以及 `Info.plist` 的更新來源 URL，需與此 repo 保持一致。
+
 **核心技術：**
 - SwiftUI 使用者介面
 - ScreenCaptureKit (SCStreamKit) 螢幕錄製
