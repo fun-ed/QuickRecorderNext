@@ -25,7 +25,7 @@ Full Xcode (not just Command Line Tools) is required. Scheme: `QuickRecorder`.
 - **Dev build + run:** `./build.sh` — Debug build, unsigned, copies the app to
   `/Applications/QuickRecorder-Dev.app` and runs it in the foreground (logs to stdout).
 - **Release DMG:** `./build-release.sh` — arm64 Release build, ad-hoc signed, output in
-  `build-release/` (gitignored). The version string `1.8.2` is **hardcoded** in the DMG
+  `build-release/` (gitignored). The version string `1.8.3` is **hardcoded** in the DMG
   path and volume name; update it together with `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`
   in `QuickRecorder.xcodeproj/project.pbxproj` and `CHANGELOG.md`.
   Publishing a Sparkle update in `appcast.xml` separately requires a published artifact
@@ -42,6 +42,9 @@ There is no XCTest target. `verify_filename_logic.swift` is a standalone script
 `swift verify_webcam_screen_logic.swift` extracts the production backend and checks
 timeline adjustment, PiP composition, synthetic MOV/MP4 encoding and decoding, and
 codec-preserving audio remux without activating a camera or screen capture.
+`swift verify_webcam_screen_ui.swift` renders the production view at 780×555 with
+fake devices in English, Traditional Chinese, and Italian. It writes 30 PNGs for
+all recording states, missing sources, and a long error without using capture hardware.
 These scripts do not verify real capture latency, permissions, device interruption,
 or long-running recording. Webcam acceptance still requires real recording/playback,
 measured A/V sync for Mode 2, and a 30-minute soak test.

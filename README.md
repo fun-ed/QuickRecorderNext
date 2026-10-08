@@ -25,7 +25,7 @@
 - macOS 12.3 and Later
 
 ### Install:
-Download the latest release DMG of this fork [here](https://github.com/fun-ed/QuickRecorderNext/releases/latest). QuickRecorder 1.8.2 is build 182 and is available for arm64 only. Open the DMG and drag `QuickRecorder.app` to the Applications folder.
+Download the latest release DMG of this fork [here](https://github.com/fun-ed/QuickRecorderNext/releases/latest). QuickRecorder 1.8.3 is build 183 and is available for arm64 only. Open the DMG and drag `QuickRecorder.app` to the Applications folder.
 
 The Homebrew tap installs the **upstream** build, not this fork:
 
@@ -41,8 +41,8 @@ Requires Xcode 26 or later (KeyboardShortcuts 3.x needs swift-tools 6.2).
 ./build-release.sh   # arm64 Release build, ad-hoc signed DMG in build-release/
 ```
 
-The 1.8.2 release DMG is ad-hoc signed, not notarized. On first launch, macOS may block it; allow it in **System Settings > Privacy & Security**.
-Use GitHub Releases for 1.8.2. A Sparkle update-feed entry is not published until a matching
+The 1.8.3 release DMG is ad-hoc signed, not notarized. On first launch, macOS may block it; allow it in **System Settings > Privacy & Security**.
+Use GitHub Releases for 1.8.3. A Sparkle update-feed entry is not published until a matching
 artifact signature is available.
 
 

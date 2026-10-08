@@ -25,7 +25,7 @@
 - macOS 12.3 及更高版本  
 
 ### 安装:
-可[点此前往](https://github.com/fun-ed/QuickRecorderNext/releases/latest)下载本分支的最新版 DMG。QuickRecorder 1.8.2 是 build 182，目前仅提供 arm64 版本。打开 DMG，将 `QuickRecorder.app` 拖入“应用程序”文件夹.
+可[点此前往](https://github.com/fun-ed/QuickRecorderNext/releases/latest)下载本分支的最新版 DMG。QuickRecorder 1.8.3 是 build 183，目前仅提供 arm64 版本。打开 DMG，将 `QuickRecorder.app` 拖入“应用程序”文件夹.
 
 Homebrew tap 安装的是**上游**版本, 而非本分支:
 
@@ -41,8 +41,8 @@ brew install lihaoyun6/tap/quickrecorder
 ./build-release.sh   # arm64 Release 构建, 在 build-release/ 生成 ad-hoc 签名的 DMG
 ```
 
-1.8.2 Release DMG 仅做 ad-hoc 签名, 未经公证. 首次启动若被 macOS 阻止, 请在 **系统设置 > 隐私与安全性** 中允许.
-1.8.2 请从 GitHub Releases 下载。没有对应产物的有效签名前，不发布 Sparkle 更新项。
+1.8.3 Release DMG 仅做 ad-hoc 签名, 未经公证. 首次启动若被 macOS 阻止, 请在 **系统设置 > 隐私与安全性** 中允许.
+1.8.3 请从 GitHub Releases 下载。没有对应产物的有效签名前，不发布 Sparkle 更新项。
 
 
 ### 特色 / 使用:

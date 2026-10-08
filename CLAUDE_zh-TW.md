@@ -25,7 +25,7 @@ App「關於」視窗的原始碼連結，以及 `Info.plist` 的更新來源 UR
 - **開發建置並執行：** `./build.sh`。Debug 建置、不簽章，複製到
   `/Applications/QuickRecorder-Dev.app` 後在前景執行（日誌輸出到 stdout）。
 - **發布 DMG：** `./build-release.sh`。arm64 Release 建置、ad-hoc 簽章，輸出在
-  `build-release/`（已列入 gitignore）。DMG 路徑與磁碟區名稱中的版本字串 `1.8.2` 是
+  `build-release/`（已列入 gitignore）。DMG 路徑與磁碟區名稱中的版本字串 `1.8.3` 是
   **寫死的**。發版時要與 `QuickRecorder.xcodeproj/project.pbxproj` 的 `MARKETING_VERSION`、
   `CURRENT_PROJECT_VERSION` 和 `CHANGELOG.md` 一起更新。
   在 `appcast.xml` 發布 Sparkle 更新另需已發布的產物及其有效 EdDSA 簽章；
@@ -41,6 +41,9 @@ App「關於」視窗的原始碼連結，以及 `Info.plist` 的更新來源 UR
 `swift verify_webcam_logic.swift` 以替身檢查 webcam-only 的錄影所有權與生命週期。
 `swift verify_webcam_screen_logic.swift` 擷取正式 backend，檢查時間軸調整、子母畫面合成、
 模擬影格的 MOV／MP4 編碼與解碼，以及保留影片編碼的音訊混合，不啟動攝影機或螢幕擷取。
+`swift verify_webcam_screen_ui.swift` 以模擬裝置在 780×555 尺寸呈現正式視圖，
+涵蓋英文、繁中、義大利文的所有錄影狀態、缺少來源與長錯誤訊息，
+輸出 30 張 PNG，不使用擷取硬體。
 這些腳本不驗證真實擷取延遲、權限、裝置中斷或長時間錄影。
 Webcam 驗收仍需實際錄影與播放、Mode 2 的影音同步量測，以及 30 分鐘持續錄影測試。
 錄影行為以手動方式驗證：用目標設定錄一段，再用 `ffprobe` 檢查檔案（長度應與實際時間相符）。

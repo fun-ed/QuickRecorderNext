@@ -513,52 +513,35 @@ struct WebcamScreenRecordingView: View {
     @State private var sourceError: String?
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Webcam + Screen".local).font(.headline)
-                Text("Record one display with a webcam picture-in-picture.".local)
-                    .font(.caption).foregroundColor(.secondary)
+        VStack(alignment: .leading, spacing: 10) {
+            header
 
-                sourcePickers
-                    .disabled(!canChangeSources || refreshingSources)
+            HStack(alignment: .top, spacing: 12) {
+                previewPanel
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-                ZStack {
-                    Color.black
-                    if let image = recorder.previewImage {
-                        Image(nsImage: image).resizable().scaledToFit()
-                    } else if recorder.state == .preparing || refreshingSources {
-                        ProgressView("Preparing screen and camera…".local)
-                            .foregroundColor(.white)
-                    } else {
-                        Text("Start preview to see the composite.".local)
-                            .foregroundColor(.white)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        sourcePickers
+                            .disabled(!canChangeSources || refreshingSources)
+                        audioControls
+                            .disabled(!canChangeSources || refreshingSources)
+                        layoutControls
+                            .disabled(!canChangeSources)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(height: 260)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-
-                if !recorder.actualFormatDescription.isEmpty {
-                    Text(recorder.actualFormatDescription)
-                        .font(.caption).foregroundColor(.secondary)
-                }
-
-                layoutControls.disabled(!canChangeSources)
-
-                Text("SDR only. HDR, transparency, microphone mute and echo cancellation are unavailable.".local)
-                    .font(.caption).foregroundColor(.secondary)
-                Text("QuickRecorder windows are excluded. Presenter Overlay stops this recording.".local)
-                    .font(.caption).foregroundColor(.secondary)
-
-                if let message = recorder.errorMessage ?? sourceError {
-                    Text(message).foregroundColor(.red)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                controls
+                .frame(width: 300)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            Divider()
+            controls
+                .padding(.top, 2)
         }
-        .padding(16)
-        .frame(minWidth: 420, idealWidth: 480)
+        .padding(14)
+        .frame(minWidth: 720, idealWidth: 780, maxWidth: .infinity,
+               minHeight: 450, idealHeight: 555, maxHeight: .infinity)
         .background(WindowAccessor(onWindowClose: { recorder.cancelPreview() }))
         .onAppear {
             if recorder.state == .idle { refreshSources() }
@@ -573,52 +556,245 @@ struct WebcamScreenRecordingView: View {
         .onChange(of: layout.mirrored) { _ in recorder.updateLayout(layout) }
     }
 
+    private var header: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "record.circle")
+                .font(.system(size: 24, weight: .medium))
+                .foregroundStyle(Color.accentColor)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Webcam + Screen".local)
+                    .font(.headline)
+                Text("Record one display with a webcam picture-in-picture.".local)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+
+            if recorder.state == .idle {
+                Button("Refresh sources".local) { refreshSources() }
+                    .disabled(refreshingSources)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var previewPanel: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 8) {
+                ZStack {
+                    Color.black
+                    if let image = recorder.previewImage {
+                        Image(nsImage: image)
+                            .resizable()
+                            .scaledToFit()
+                    } else if recorder.state == .preparing || refreshingSources {
+                        ProgressView("Preparing screen and camera…".local)
+                            .foregroundColor(.white)
+                    } else {
+                        Text("Start preview to see the composite.".local)
+                            .foregroundColor(.white)
+                    }
+                }
+                .frame(height: recorder.errorMessage == nil && sourceError == nil ? 230 : 180)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                if !recorder.actualFormatDescription.isEmpty {
+                    Text(recorder.actualFormatDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Text("SDR only. HDR, transparency, microphone mute and echo cancellation are unavailable.".local)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("QuickRecorder windows are excluded. Presenter Overlay stops this recording.".local)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let message = recorder.errorMessage ?? sourceError {
+                    HStack(alignment: .top, spacing: 7) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                            .accessibilityHidden(true)
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(8)
+                    .background(Color.red.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+            Label("Preview".local, systemImage: "rectangle.inset.filled")
+                .font(.headline)
+        }
+    }
+
     private var sourcePickers: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Picker("Display".local, selection: $selectedDisplayID) {
-                ForEach(displays, id: \.displayID) { display in
-                    Text(displayName(display)).tag(display.displayID)
+        GroupBox {
+            VStack(alignment: .leading, spacing: 9) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Display".local, systemImage: "display")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Picker("Display".local, selection: $selectedDisplayID) {
+                        ForEach(displays, id: \.displayID) { display in
+                            Text(displayName(display)).tag(display.displayID)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(maxWidth: .infinity)
+                    .accessibilityLabel("Display".local)
+                    if displays.isEmpty {
+                        Text("No displays were found.".local)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-            }.pickerStyle(.menu)
-            Picker("Camera".local, selection: $selectedCameraID) {
-                ForEach(cameras, id: \.uniqueID) { camera in
-                    Text(camera.localizedName).tag(camera.uniqueID)
+
+                if cameras.isEmpty {
+                    Text("No cameras were found.".local)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Picker("Camera".local, selection: $selectedCameraID) {
+                        ForEach(cameras, id: \.uniqueID) { camera in
+                            Text(camera.localizedName).tag(camera.uniqueID)
+                        }
+                    }
+                    .pickerStyle(.menu)
                 }
-            }.pickerStyle(.menu)
-            if cameras.isEmpty {
-                Text("No cameras were found.".local).foregroundColor(.secondary)
             }
-            Picker("Microphone".local, selection: $selectedMicrophoneID) {
-                Text("No microphone".local).tag("")
-                ForEach(microphones, id: \.uniqueID) { microphone in
-                    Text(microphone.localizedName).tag(microphone.uniqueID)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+            Label("Capture sources".local, systemImage: "display.2")
+                .font(.headline)
+        }
+    }
+
+    private var audioControls: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 8) {
+                Picker("Microphone".local, selection: $selectedMicrophoneID) {
+                    Text("No microphone".local).tag("")
+                    ForEach(microphones, id: \.uniqueID) { microphone in
+                        Text(microphone.localizedName).tag(microphone.uniqueID)
+                    }
                 }
-            }.pickerStyle(.menu)
-            Toggle("Record System Audio".local, isOn: $captureSystemAudio)
-                .toggleStyle(.checkbox)
-            if captureSystemAudio && !selectedMicrophoneID.isEmpty {
-                Toggle("Record Microphone to Main Track".local, isOn: $remuxAudio)
+                .pickerStyle(.menu)
+
+                Toggle("Record System Audio".local, isOn: $captureSystemAudio)
                     .toggleStyle(.checkbox)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if captureSystemAudio && !selectedMicrophoneID.isEmpty {
+                    Toggle("Record Microphone to Main Track".local, isOn: $remuxAudio)
+                        .toggleStyle(.checkbox)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+            Label("Audio".local, systemImage: "waveform")
+                .font(.headline)
         }
     }
 
     private var layoutControls: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Picker("Webcam position".local, selection: $layout.position) {
-                Text("Top left".local).tag(WebcamScreenLayout.Position.topLeft)
-                Text("Top right".local).tag(WebcamScreenLayout.Position.topRight)
-                Text("Bottom left".local).tag(WebcamScreenLayout.Position.bottomLeft)
-                Text("Bottom right".local).tag(WebcamScreenLayout.Position.bottomRight)
-            }.pickerStyle(.menu)
-            HStack {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 8) {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 5) {
+                    ForEach(WebcamScreenLayout.Position.allCases, id: \.self) { position in
+                        positionButton(position, label: positionLabel(position))
+                    }
+                }
+
                 Text("Webcam size".local)
-                Slider(value: $layout.widthFraction, in: 0.15...0.40, step: 0.01)
-                Text("\(Int(layout.widthFraction * 100))%").monospacedDigit()
-                    .frame(width: 42, alignment: .trailing)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    Slider(value: $layout.widthFraction, in: 0.15...0.40, step: 0.01)
+                    Text("\(Int(layout.widthFraction * 100))%")
+                        .monospacedDigit()
+                        .frame(width: 38, alignment: .trailing)
+                }
+
+                Toggle("Mirror webcam in saved video".local, isOn: $layout.mirrored)
+                    .toggleStyle(.checkbox)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Toggle("Mirror webcam in saved video".local, isOn: $layout.mirrored)
-                .toggleStyle(.checkbox)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+            Label("Picture-in-picture".local, systemImage: "pip")
+                .font(.headline)
+        }
+    }
+
+    private func positionButton(_ position: WebcamScreenLayout.Position, label: String) -> some View {
+        let isSelected = layout.position == position
+        return Button {
+            layout.position = position
+        } label: {
+            VStack(spacing: 3) {
+                ZStack(alignment: positionAlignment(position)) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.primary.opacity(0.06))
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(isSelected ? Color.accentColor : Color.secondary)
+                        .frame(width: 12, height: 8)
+                        .padding(4)
+                }
+                .frame(width: 52, height: 32)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.35),
+                                lineWidth: isSelected ? 2 : 1)
+                }
+
+                Text(label)
+                    .font(.caption2)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(4)
+            .background(isSelected ? Color.accentColor.opacity(0.08) : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private func positionLabel(_ position: WebcamScreenLayout.Position) -> String {
+        switch position {
+        case .topLeft: return "Top left".local
+        case .topRight: return "Top right".local
+        case .bottomLeft: return "Bottom left".local
+        case .bottomRight: return "Bottom right".local
+        }
+    }
+
+    private func positionAlignment(_ position: WebcamScreenLayout.Position) -> Alignment {
+        switch position {
+        case .topLeft: return .topLeading
+        case .topRight: return .topTrailing
+        case .bottomLeft: return .bottomLeading
+        case .bottomRight: return .bottomTrailing
         }
     }
 
@@ -627,32 +803,37 @@ struct WebcamScreenRecordingView: View {
         switch recorder.state {
         case .idle:
             HStack {
-                Button("Start preview".local) { startPreview() }
-                    .disabled(selectedCameraID.isEmpty || selectedDisplayID == 0 || refreshingSources)
-                Button("Refresh sources".local) { refreshSources() }
-                    .disabled(refreshingSources)
                 Spacer()
                 Button("Cancel".local) { cancelSetupView() }
+                Button("Start preview".local) { startPreview() }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(selectedCameraID.isEmpty || selectedDisplayID == 0 || refreshingSources)
             }
         case .preparing:
-            HStack {
+            HStack(spacing: 8) {
                 ProgressView()
+                    .controlSize(.small)
                 Text("Preparing screen and camera…".local)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Button("Cancel".local) { cancelSetupView() }
             }
         case .previewing:
-            Stepper(value: $autoStopMinutes, in: 0...180) {
-                Text(autoStopMinutes == 0
-                     ? "Auto-stop is off".local
-                     : String(format: "Stop after %d minutes".local, autoStopMinutes))
-            }
-            HStack {
+            HStack(spacing: 10) {
+                Stepper(value: $autoStopMinutes, in: 0...180) {
+                    Text(autoStopMinutes == 0
+                         ? "Auto-stop is off".local
+                         : String(format: "Stop after %d minutes".local, autoStopMinutes))
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .fixedSize()
+                Spacer(minLength: 8)
+                Button("Cancel".local) { cancelSetupView() }
                 Button("Start recording".local) {
                     recorder.startRecording(autoStopMinutes: autoStopMinutes, remuxAudio: remuxAudio)
                 }
-                Spacer()
-                Button("Cancel".local) { cancelSetupView() }
+                .buttonStyle(.borderedProminent)
             }
         case .countdown:
             HStack {
@@ -664,9 +845,13 @@ struct WebcamScreenRecordingView: View {
         case .starting:
             HStack {
                 ProgressView()
+                    .controlSize(.small)
                 Text("Starting recording…".local)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Button("Stop recording".local) { recorder.stopRecording() }
+                    .buttonStyle(.bordered)
+                    .tint(.red)
             }
         case .recording, .paused:
             HStack {
@@ -676,12 +861,18 @@ struct WebcamScreenRecordingView: View {
                     recorder.pauseRecording()
                 }
                 Button("Stop recording".local) { recorder.stopRecording() }
+                    .buttonStyle(.bordered)
+                    .tint(.red)
             }
         case .finishing:
-            HStack {
+            HStack(spacing: 8) {
                 ProgressView()
+                    .controlSize(.small)
                 Text("Saving recording…".local)
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

@@ -361,3 +361,8 @@
 "Unable to create a final video and audio composition." = "无法创建最终音视频组合。";
 "Unable to reserve a temporary remux file." = "无法预留临时封装文件。";
 "The screen capture stopped unexpectedly." = "屏幕采集意外停止。";
+
+/* Webcam + screen layout */
+"Capture sources" = "捕获来源";
+"Preview" = "预览";
+"Picture-in-picture" = "画中画";
