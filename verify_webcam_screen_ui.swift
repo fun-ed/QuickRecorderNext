@@ -155,6 +155,11 @@ private final class WebcamScreenRecorder: ObservableObject {
     func cancelPreview() { state = .idle }
 }
 
+private final class AppDelegate {
+    static let shared = AppDelegate()
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool { false }
+}
+
 private enum DemoPreview {
     static let image: NSImage = {
         let size = NSSize(width: 1600, height: 900)

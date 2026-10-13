@@ -25,7 +25,7 @@ Full Xcode (not just Command Line Tools) is required. Scheme: `QuickRecorder`.
 - **Dev build + run:** `./build.sh` — Debug build, unsigned, copies the app to
   `/Applications/QuickRecorder-Dev.app` and runs it in the foreground (logs to stdout).
 - **Release DMG:** `./build-release.sh` — arm64 Release build, ad-hoc signed, output in
-  `build-release/` (gitignored). The version string `1.8.3` is **hardcoded** in the DMG
+  `build-release/` (gitignored). The version string `1.8.4` is **hardcoded** in the DMG
   path and volume name; update it together with `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`
   in `QuickRecorder.xcodeproj/project.pbxproj` and `CHANGELOG.md`.
   Publishing a Sparkle update in `appcast.xml` separately requires a published artifact

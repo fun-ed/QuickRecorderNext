@@ -25,7 +25,7 @@
 - macOS 12.3 及更高版本  
 
 ### 安装:
-可[点此前往](https://github.com/fun-ed/QuickRecorderNext/releases/latest)下载本分支的最新版 DMG。QuickRecorder 1.8.3 是 build 183，目前仅提供 arm64 版本。打开 DMG，将 `QuickRecorder.app` 拖入“应用程序”文件夹.
+可[点此前往](https://github.com/fun-ed/QuickRecorderNext/releases/latest)下载本分支的最新版 DMG。QuickRecorder 1.8.4 是 build 184，目前仅提供 arm64 版本。打开 DMG，将 `QuickRecorder.app` 拖入“应用程序”文件夹.
 
 Homebrew tap 安装的是**上游**版本, 而非本分支:
 
@@ -41,8 +41,8 @@ brew install lihaoyun6/tap/quickrecorder
 ./build-release.sh   # arm64 Release 构建, 在 build-release/ 生成 ad-hoc 签名的 DMG
 ```
 
-1.8.3 Release DMG 仅做 ad-hoc 签名, 未经公证. 首次启动若被 macOS 阻止, 请在 **系统设置 > 隐私与安全性** 中允许.
-1.8.3 请从 GitHub Releases 下载。没有对应产物的有效签名前，不发布 Sparkle 更新项。
+1.8.4 Release DMG 仅做 ad-hoc 签名, 未经公证. 首次启动若被 macOS 阻止, 请在 **系统设置 > 隐私与安全性** 中允许.
+1.8.4 请从 GitHub Releases 下载。没有对应产物的有效签名前，不发布 Sparkle 更新项。
 
 
 ### 特色 / 使用:
@@ -63,6 +63,8 @@ brew install lihaoyun6/tap/quickrecorder
 
 两种模式都支持倒数、暂停／继续、停止和可选自动停止。可使用模式窗口中的控制按钮或已设置的录制快捷键。文件会保存到当前选择的保存文件夹。停止后请等到“正在保存录制…”结束再退出应用，尤其是 Webcam + Screen 正在混合音频时.
 
+开始录制前，点击 **Cancel** 会停止预览，待捕获清理完成并回到 `idle` 后返回主面板。等待期间控制项会停用。1.8.4 也会释放已关闭的设置视图，避免干扰后续操作。实体设备上报告的 **Not Responding** 尚未重现或确认修复；若原生捕获清理卡住，Cancel 仍会等待 `idle`。
+
 这两种 Webcam 模式都不使用 fragmented MP4 中断保护。若应用崩溃或被强制退出，输出文件可能无法播放.
 
 ### 离线验证
@@ -73,9 +75,13 @@ brew install lihaoyun6/tap/quickrecorder
 swift verify_filename_logic.swift
 swift verify_webcam_logic.swift
 swift verify_webcam_screen_logic.swift
+swift verify_webcam_cancel_ui.swift
+swift verify_webcam_screen_ui.swift
 ```
 
 文件名脚本检查三重扩展名处理。Webcam 脚本使用模拟摄像头回调，不会访问实体设备。Webcam + Screen 脚本检查从生产代码提取的生命周期、时间轴、音频暂停、待处理影格、合成器和音频重封装逻辑，也会执行合成画面的 MP4／MOV 编码解码及保留视频编码的重封装。这些离线检查不验证真实摄像头录制与播放、实测影音同步、设备断开或 30 分钟连续录制.
+
+Cancel UI 脚本使用正式 SwiftUI 取消动作与模拟捕获状态，检查两种模式的清理顺序、返回主面板、重复取消及后续状态切换。测试有 UI 卡死超时检查，但不执行原生摄像头或屏幕捕获的停止流程。UI 快照脚本以模拟设备与合成画面，在 780×555 尺寸输出英文、繁中、意大利文共 30 张 PNG。
 
 ## 常见问题
 **1. 主面板关闭之后在哪里重新打开?**  

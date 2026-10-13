@@ -253,6 +253,7 @@ struct WebcamRecordingView: View {
     @State private var selectedMicrophoneID = ""
     @State private var previewIsMirrored = true
     @State private var autoStopMinutes = 0
+    @State private var cancelRequested = false
 
     var body: some View {
         ScrollView {
@@ -331,6 +332,7 @@ struct WebcamRecordingView: View {
         }
         .padding(16)
         .frame(minWidth: 380, idealWidth: 430)
+        .disabled(cancelRequested)
         .background(WindowAccessor(onWindowClose: {
             recorder.cancelPreview()
         }))
@@ -341,6 +343,9 @@ struct WebcamRecordingView: View {
         }
         .onDisappear {
             recorder.cancelPreview()
+        }
+        .onChange(of: recorder.state) { state in
+            if state == .idle { returnToMainViewAfterCancellation() }
         }
         .onChange(of: selectedCameraID) { _ in
             restartPreviewForSourceChange()
@@ -443,8 +448,23 @@ struct WebcamRecordingView: View {
         recorder.startPreview(cameraID: selectedCameraID, microphoneID: selectedMicrophoneID)
     }
     private func cancelSetupView() {
+        guard !cancelRequested else { return }
+        cancelRequested = true
         recorder.cancelPreview()
-        NSApp.windows.first(where: { $0.title == "Webcam".local })?.close()
+        if recorder.state == .idle { returnToMainViewAfterCancellation() }
+    }
+
+    private func returnToMainViewAfterCancellation() {
+        guard cancelRequested else { return }
+        cancelRequested = false
+        // Defer AppKit window changes until SwiftUI has finished publishing idle.
+        DispatchQueue.main.async {
+            let window = NSApp.windows.first(where: { $0.title == "Webcam".local && $0.isVisible })
+            window?.close()
+            // Closed windows are retained; release their recorder subscriptions.
+            window?.contentView = nil
+            _ = AppDelegate.shared.applicationShouldHandleReopen(NSApp, hasVisibleWindows: false)
+        }
     }
 }
 
@@ -511,6 +531,7 @@ struct WebcamScreenRecordingView: View {
     @State private var autoStopMinutes = 0
     @State private var refreshingSources = false
     @State private var sourceError: String?
+    @State private var cancelRequested = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -542,11 +563,15 @@ struct WebcamScreenRecordingView: View {
         .padding(14)
         .frame(minWidth: 720, idealWidth: 780, maxWidth: .infinity,
                minHeight: 450, idealHeight: 555, maxHeight: .infinity)
+        .disabled(cancelRequested)
         .background(WindowAccessor(onWindowClose: { recorder.cancelPreview() }))
         .onAppear {
             if recorder.state == .idle { refreshSources() }
         }
         .onDisappear { recorder.cancelPreview() }
+        .onChange(of: recorder.state) { state in
+            if state == .idle { returnToMainViewAfterCancellation() }
+        }
         .onChange(of: selectedCameraID) { _ in restartPreview() }
         .onChange(of: selectedMicrophoneID) { _ in restartPreview() }
         .onChange(of: selectedDisplayID) { _ in restartPreview() }
@@ -942,7 +967,22 @@ struct WebcamScreenRecordingView: View {
     }
 
     private func cancelSetupView() {
+        guard !cancelRequested else { return }
+        cancelRequested = true
         recorder.cancelPreview()
-        NSApp.windows.first(where: { $0.title == "Webcam + Screen".local })?.close()
+        if recorder.state == .idle { returnToMainViewAfterCancellation() }
+    }
+
+    private func returnToMainViewAfterCancellation() {
+        guard cancelRequested else { return }
+        cancelRequested = false
+        // Defer AppKit window changes until SwiftUI has finished publishing idle.
+        DispatchQueue.main.async {
+            let window = NSApp.windows.first(where: { $0.title == "Webcam + Screen".local && $0.isVisible })
+            window?.close()
+            // Closed windows are retained; release their recorder subscriptions.
+            window?.contentView = nil
+            _ = AppDelegate.shared.applicationShouldHandleReopen(NSApp, hasVisibleWindows: false)
+        }
     }
 }

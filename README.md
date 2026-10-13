@@ -25,7 +25,7 @@
 - macOS 12.3 and Later
 
 ### Install:
-Download the latest release DMG of this fork [here](https://github.com/fun-ed/QuickRecorderNext/releases/latest). QuickRecorder 1.8.3 is build 183 and is available for arm64 only. Open the DMG and drag `QuickRecorder.app` to the Applications folder.
+Download the latest release DMG of this fork [here](https://github.com/fun-ed/QuickRecorderNext/releases/latest). QuickRecorder 1.8.4 is build 184 and is available for arm64 only. Open the DMG and drag `QuickRecorder.app` to the Applications folder.
 
 The Homebrew tap installs the **upstream** build, not this fork:
 
@@ -41,8 +41,8 @@ Requires Xcode 26 or later (KeyboardShortcuts 3.x needs swift-tools 6.2).
 ./build-release.sh   # arm64 Release build, ad-hoc signed DMG in build-release/
 ```
 
-The 1.8.3 release DMG is ad-hoc signed, not notarized. On first launch, macOS may block it; allow it in **System Settings > Privacy & Security**.
-Use GitHub Releases for 1.8.3. A Sparkle update-feed entry is not published until a matching
+The 1.8.4 release DMG is ad-hoc signed, not notarized. On first launch, macOS may block it; allow it in **System Settings > Privacy & Security**.
+Use GitHub Releases for 1.8.4. A Sparkle update-feed entry is not published until a matching
 artifact signature is available.
 
 
@@ -63,6 +63,8 @@ Open the main panel and choose **Webcam** for webcam-only recording or **Webcam 
 
 Both modes support countdown, pause/resume, stop, and optional auto-stop. Use the mode window's controls or the configured recording shortcuts. Files go to the selected save folder. After stopping, wait until **Saving recording…** finishes before quitting, especially when Webcam + Screen is mixing audio.
 
+Before recording starts, **Cancel** stops the preview and returns to the main panel after capture cleanup reaches `idle`. Controls are disabled while cleanup is pending. Version 1.8.4 also releases the closed setup view so it cannot interfere with later sessions. The reported real-device **Not Responding** condition has not been reproduced or confirmed fixed; if native cleanup stalls, Cancel still waits for `idle`.
+
 Neither Webcam mode uses the fragmented MP4 protection described below. A crash or force quit can leave its output unplayable.
 
 ### Offline verification
@@ -73,9 +75,13 @@ Run these commands from the repository root:
 swift verify_filename_logic.swift
 swift verify_webcam_logic.swift
 swift verify_webcam_screen_logic.swift
+swift verify_webcam_cancel_ui.swift
+swift verify_webcam_screen_ui.swift
 ```
 
 The filename script checks triple-extension naming. The Webcam script exercises simulated camera output callbacks, not physical devices. The Webcam + Screen script checks production-extracted lifecycle, timeline, audio-pause, pending-frame, compositor, and audio-remux logic, including synthetic MP4/MOV encode/decode and codec-preserving remux. These offline checks do not validate real camera recording or playback, measured audio/video sync, device disconnects, or a 30-minute recording soak.
+
+The Cancel UI script runs the production SwiftUI cancellation actions with simulated capture state and checks cleanup ordering, main-panel reopening, duplicate cancellation, and later state changes in both modes. It includes a timeout for UI hangs but does not exercise native camera or screen-capture shutdown. The UI snapshot script renders 30 English, Traditional Chinese, and Italian PNGs at 780×555 with synthetic devices and images.
 
 ## Q&A
 **1. Where can I reopen the main panel after closing it?**
