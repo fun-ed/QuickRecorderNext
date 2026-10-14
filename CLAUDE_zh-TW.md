@@ -31,7 +31,11 @@ App「關於」視窗的原始碼連結，以及 `Info.plist` 的更新來源 UR
   在 `appcast.xml` 發布 Sparkle 更新另需已發布的產物及其有效 EdDSA 簽章；
   缺少這些條件時保留既有 feed。
   內嵌的 framework（Sparkle）必須以 ad-hoc 重新簽署，否則 hardened runtime 會在啟動時以
-  Team ID 不符拒絕載入。腳本已處理這一步。
+  Team ID 不符拒絕載入。腳本已處理這一步。腳本結束時會刪除 `build-release/build` 與
+  `build-release/dmg-root`，只留下 DMG；安裝請從 DMG 進行。
+- **工作流程 skill：** `.claude/skills/quickrecorder-workflow/SKILL.md` 收錄編譯、除錯、發布、
+  安裝與清理程序。任何建置或安裝前先讀它；完成後 `/Applications` 以外不得留下
+  `QuickRecorder.app` 副本。
 - **僅編譯檢查：** `xcodebuild -project QuickRecorder.xcodeproj -scheme QuickRecorder -configuration Debug CODE_SIGNING_ALLOWED=NO build`
 - **除錯日誌：** `SCContext.swift` 中的 `debugLog(...)` 寫入 `/tmp/qr-debug.log`
   （也可從 App 的 Help 選單開啟）。

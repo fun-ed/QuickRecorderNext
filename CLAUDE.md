@@ -31,7 +31,11 @@ Full Xcode (not just Command Line Tools) is required. Scheme: `QuickRecorder`.
   Publishing a Sparkle update in `appcast.xml` separately requires a published artifact
   and its valid EdDSA signature; preserve the existing feed when these are unavailable.
   Embedded frameworks (Sparkle) must be re-signed ad-hoc, or hardened runtime rejects them
-  at launch with a Team ID mismatch; the script does this.
+  at launch with a Team ID mismatch; the script does this. On exit the script deletes
+  `build-release/build` and `build-release/dmg-root`, leaving only the DMG; install from the DMG.
+- **Workflow skill:** `.claude/skills/quickrecorder-workflow/SKILL.md` holds the compile, debug,
+  release, install, and cleanup procedures. Read it before any build or install; each one must
+  leave no `QuickRecorder.app` copies outside `/Applications`.
 - **Compile-only check:** `xcodebuild -project QuickRecorder.xcodeproj -scheme QuickRecorder -configuration Debug CODE_SIGNING_ALLOWED=NO build`
 - **Debug log:** `debugLog(...)` in `SCContext.swift` writes to `/tmp/qr-debug.log`
   (also reachable from the app's Help menu).

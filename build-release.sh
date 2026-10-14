@@ -10,6 +10,8 @@ STAGING_DIR="$OUTPUT_DIR/dmg-root"
 
 rm -rf "$OUTPUT_DIR"
 mkdir -p "$BUILD_DIR" "$STAGING_DIR"
+# Keep only the DMG: intermediate .app copies would otherwise show up in Spotlight.
+trap 'rm -rf "$BUILD_DIR" "$STAGING_DIR"' EXIT
 
 xcodebuild \
   -project "$ROOT_DIR/QuickRecorder.xcodeproj" \

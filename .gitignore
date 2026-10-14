@@ -92,3 +92,7 @@ iOSInjectionProject/
 
 # Local release artifacts
 build-release/
+# Shared agent skills (global gitignore excludes .claude/)
+!.claude/
+.claude/*
+!.claude/skills/
